@@ -29,7 +29,7 @@ use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
 use wgpu_lite_wrapper::primitives::cube::CubeOptions;
-use wgpu_lite_wrapper::primitives::{cube, Object3D};
+use wgpu_lite_wrapper::primitives::{cube, Object3D, Shareable, Transforms};
 use wgpu_lite_wrapper::scenario::{Scenario, UpdateContext};
 
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
@@ -73,7 +73,7 @@ impl MainScenario {
             Default::default(),
         )
         .unwrap()
-        .as_shareable();
+        .into_shareable();
         let cube_flat = cube::create_cube_with_colors(
             draw_context,
             &flat_shader_module,
@@ -82,7 +82,7 @@ impl MainScenario {
             CubeOptions { with_alpha: true },
         )
         .unwrap()
-        .as_shareable();
+        .into_shareable();
 
         scene.add(cube_interpolated.clone());
         scene.add(cube_flat.clone());

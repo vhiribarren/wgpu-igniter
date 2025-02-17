@@ -303,7 +303,7 @@ pub fn create_cube_with_normals_instances(
             CUBE_GEOMETRY_DUPLICATES,
             wgpu::VertexFormat::Float32x3,
         )?
-        .add_instances_attribute(1, &pos_instance_attribute, wgpu::VertexFormat::Float32x3)?
+        .add_instances_attribute(1, &pos_instance_attribute)?
         .add_uniform(0, 0, &uniforms.camera_uniform)?;
 
     if options.with_alpha {
@@ -317,8 +317,5 @@ pub fn create_cube_with_normals_instances(
         });
     }
     let drawable = drawable_builder.build();
-    Ok(Object3DInstanceGroup::new(
-        drawable,
-        pos_instance_attribute,
-    ))
+    Ok(Object3DInstanceGroup::new(drawable, pos_instance_attribute))
 }

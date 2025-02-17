@@ -48,7 +48,7 @@ fn extract_rotation(matrix: Matrix4<f32>) -> Matrix3<f32> {
 }
 
 pub trait Shareable: Sized {
-    fn as_shareable(self) -> Rc<RefCell<Self>> {
+    fn into_shareable(self) -> Rc<RefCell<Self>> {
         Rc::new(RefCell::new(self))
     }
 }
@@ -142,10 +142,7 @@ pub struct Object3DInstanceGroup {
 }
 
 impl Object3DInstanceGroup {
-    pub fn new(
-        drawable: Drawable,
-        positions: InstancesAttribute<[f32; 3]>,
-    ) -> Self {
+    pub fn new(drawable: Drawable, positions: InstancesAttribute<[f32; 3]>) -> Self {
         Self {
             drawable,
             opacity: 0.,
@@ -156,17 +153,11 @@ impl Object3DInstanceGroup {
     where
         F: Fn(usize, &mut Object3DInstance) + 'static + Send,
     {
-        let queue = &context.queue;
         let mut data = vec![[0.0; 3]; self.positions.count];
         for (idx, instance) in data.iter_mut().enumerate() {
-            let mut position: [f32; 3] = [0.; 3];
-            let mut obj = Object3DInstance {
-                position: &mut position,
-            };
-            f(idx, &mut obj);
-            *instance = *obj.position;
+            f(idx, &mut Object3DInstance { position: instance });
         }
-        queue.write_buffer(
+        context.queue.write_buffer(
             &self.positions.instance_buffer,
             0,
             bytemuck::cast_slice(&data),

@@ -145,18 +145,26 @@ impl<T: UnitformType> Uniform<T> {
     }
 }
 
+pub trait InstancesAttributeType: NoUninit {
+    fn vertex_format() -> wgpu::VertexFormat;
+}
+impl InstancesAttributeType for [f32; 3] {
+    fn vertex_format() -> wgpu::VertexFormat {
+        wgpu::VertexFormat::Float32x3
+    }
+}
+
+#[derive(Clone)]
 pub struct InstancesAttribute<T> {
     pub(crate) count: usize,
-    pub(crate) stride: usize,
     pub(crate) instance_buffer: Arc<wgpu::Buffer>,
     _type: PhantomData<T>,
 }
 
-impl<T: NoUninit> InstancesAttribute<T> {
+impl<T: InstancesAttributeType> InstancesAttribute<T> {
     pub fn new(context: &DrawContext, data_init: &[T]) -> Self {
         Self {
             count: data_init.len(),
-            stride: size_of::<T>(), // FIXME pas de prob d'alignement pour [f32; 3] ?
             instance_buffer: Arc::new(context.device.create_buffer_init(&BufferInitDescriptor {
                 label: None,
                 contents: bytemuck::cast_slice(data_init),
@@ -171,8 +179,6 @@ impl<T: NoUninit> InstancesAttribute<T> {
     //         index: 0,
     //     }
     // }
-    //fn map_async(lambda) {
-    //}
 }
 
 /*
@@ -318,22 +324,21 @@ impl<'a> DrawableBuilder<'a> {
         &mut self,
         shader_location: u32,
         instances_attributes: &InstancesAttribute<T>,
-        format: wgpu::VertexFormat,
     ) -> Result<&mut Self, anyhow::Error>
     where
-        T: bytemuck::NoUninit,
+        T: InstancesAttributeType,
     {
         if self.used_locations.contains(&shader_location) {
             bail!("Location {} already used!", shader_location);
         }
         self.used_locations.insert(shader_location);
         let attributes = vec![wgpu::VertexAttribute {
-            format,
+            format: T::vertex_format(),
             offset: 0,
             shader_location,
         }];
         let layout = wgpu::VertexBufferLayout {
-            array_stride: format.size() as wgpu::BufferAddress,
+            array_stride: T::vertex_format().size() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Instance,
             attributes: &[], // Filled later during build
         };

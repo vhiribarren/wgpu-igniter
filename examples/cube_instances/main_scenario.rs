@@ -22,20 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 use cgmath::Vector3;
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
-use wgpu_lite_wrapper::draw_context::{DrawContext, Drawable, InstancesAttribute};
+use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
-use wgpu_lite_wrapper::primitives::{cube, Object3D, Object3DInstanceGroup, Shareable};
+use wgpu_lite_wrapper::primitives::{cube, Object3DInstanceGroup, Shareable};
 use wgpu_lite_wrapper::scenario::{Scenario, UpdateContext};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
 const DEFAULT_SHADER: &str = include_str!("cube_instances.wgsl");
-
-const ROTATION_DEG_PER_S: f32 = 45.0;
 
 pub struct MainScenario {
     pub cube: Rc<std::cell::RefCell<Object3DInstanceGroup>>,
@@ -48,18 +45,16 @@ impl MainScenario {
         let camera = WinitCameraAdapter::new(PerspectiveConfig::default().into());
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut scene = Scene3D::new(draw_context);
-        let cube = {
-            let mut cube_obj = cube::create_cube_with_normals_instances(
-                draw_context,
-                &shader_module,
-                &shader_module,
-                scene.scene_uniforms(),
-                10,
-                Default::default(),
-            )
-            .unwrap();
-            cube_obj.as_shareable()
-        };
+        let cube = cube::create_cube_with_normals_instances(
+            draw_context,
+            &shader_module,
+            &shader_module,
+            scene.scene_uniforms(),
+            10,
+            Default::default(),
+        )
+        .unwrap()
+        .into_shareable();
         scene.add(cube.clone());
         Self {
             cube,
@@ -80,14 +75,8 @@ impl Scenario for MainScenario {
         let delta = update_interval.scenario_start.elapsed().as_secs_f32().cos();
         self.cube
             .borrow_mut()
-            .update_instances(draw_context, move |index, mut instance| {
-                instance.set_position(Vector3::new(delta + index as f32, index as f32, 0.));
+            .update_instances(draw_context, move |index, instance| {
+                instance.set_position(Vector3::new(delta * index as f32, delta* index as f32, 0.));
             });
-        // let delta_rotation = ROTATION_DEG_PER_S * update_interval.update_delta.as_secs_f32();
-        // let transform = cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation))
-        //     * cgmath::Matrix4::from_angle_y(cgmath::Deg(delta_rotation));
-        // self.cube
-        //     .borrow_mut()
-        //     .apply_transform(draw_context, transform);
     }
 }

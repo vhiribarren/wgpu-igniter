@@ -28,7 +28,7 @@ use std::rc::Rc;
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
-use wgpu_lite_wrapper::primitives::{cube, Object3D};
+use wgpu_lite_wrapper::primitives::{cube, Object3D, Shareable, Transforms};
 use wgpu_lite_wrapper::scenario::Scenario;
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
@@ -65,7 +65,7 @@ impl MainScenario {
             Default::default(),
         )
         .unwrap()
-        .as_shareable();
+        .into_shareable();
         let cube_right = cube::create_cube_with_colors(
             draw_context,
             &flat_shader_module,
@@ -74,7 +74,7 @@ impl MainScenario {
             Default::default(),
         )
         .unwrap()
-        .as_shareable();
+        .into_shareable();
         cube_left.borrow_mut().set_transform(
             draw_context,
             cgmath::Matrix4::from_translation(cgmath::Vector3::new(-0.5, 0.0, 5.0)),
