@@ -145,6 +145,56 @@ impl<T: UnitformType> Uniform<T> {
     }
 }
 
+
+pub trait StorageBufferType: NoUninit {
+    type AlignedType: NoUninit;
+    fn apply_alignment(&self) -> Self::AlignedType;
+ }
+ impl StorageBufferType for [[f32; 3]; 3] {
+    type AlignedType = [[f32; 4]; 3];
+    fn apply_alignment(&self) -> Self::AlignedType {
+        array::from_fn(|i| [self[i][0], self[i][1], self[i][2], 0.])
+    }
+}
+
+#[derive(Clone)]
+pub struct StorageBuffer<T> {
+    pub(crate) count: usize,
+    pub(crate) storage_buffer: Arc<wgpu::Buffer>,
+    _type: PhantomData<T>,
+}
+
+impl<T: StorageBufferType> StorageBuffer<T> {
+    pub fn new_array(context: &DrawContext, data_init: &[T]) -> Self {
+        let aligned_data: Vec<T::AlignedType> = data_init.iter().map(|item| item.apply_alignment()).collect();
+        Self {
+            count: data_init.len(),
+            storage_buffer: Arc::new(context.device.create_buffer_init(&BufferInitDescriptor {
+            label: Some("Storage Buffer"),
+            contents: bytemuck::cast_slice(&aligned_data),
+            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::STORAGE,
+            })),
+            _type: PhantomData,
+        }
+    }
+    pub fn binding_resource(&self) -> wgpu::BindingResource {
+        self.storage_buffer.as_entire_binding()
+    }
+/*
+    pub fn read_uniform(&self) -> &T {
+        &self.value
+    }
+    pub fn write_uniform(&mut self, context: &DrawContext, data: T) {
+        self.value = data;
+        context.queue.write_buffer(
+            &self.buffer,
+            0 as wgpu::BufferAddress,
+            bytemuck::cast_slice(&[self.value.apply_alignment()]),
+        );
+    }
+    */
+}
+
 pub trait InstancesAttributeType: NoUninit {
     fn vertex_format() -> wgpu::VertexFormat;
 }
@@ -173,28 +223,8 @@ impl<T: InstancesAttributeType> InstancesAttribute<T> {
             _type: PhantomData,
         }
     }
-    // pub fn iter(&self) -> impl Iterator + use<'_, T> {
-    //     InstancesAttributeIterator {
-    //         instances: &self,
-    //         index: 0,
-    //     }
-    // }
 }
 
-/*
-struct InstancesAttributeIterator<'a, T> {
-    instances: &'a InstancesAttribute<T>,
-    index: usize,
-}
-
-impl<'a, T> Iterator for InstancesAttributeIterator<'a, T> {
-    type Item = &'a T;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        todo!()
-    }
-}
-*/
 
 pub struct DrawableBuilder<'a> {
     context: &'a DrawContext,
@@ -207,7 +237,7 @@ pub struct DrawableBuilder<'a> {
     layouts: Vec<wgpu::VertexBufferLayout<'a>>,
     instance_count: u32,
     blend_option: Option<wgpu::BlendState>,
-    binding_groups: Vec<Option<BTreeMap<u32, wgpu::BindingResource<'a>>>>,
+    binding_groups: Vec<Option<BTreeMap<u32, (wgpu::BindingResource<'a>, wgpu::BindGroupLayoutEntry)>>>,
 }
 
 impl<'a> DrawableBuilder<'a> {
@@ -266,17 +296,65 @@ impl<'a> DrawableBuilder<'a> {
     where
         T: UnitformType,
     {
+        let bind_group_layout_entry = wgpu::BindGroupLayoutEntry {
+            binding,
+            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Uniform,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            count: None,
+        };
         let bind_group = bind_group as usize;
         if bind_group >= self.binding_groups.len() {
             self.binding_groups.resize(bind_group + 1, None);
         }
+        let to_store = (uniform.binding_resource(), bind_group_layout_entry);
         match self.binding_groups.get_mut(bind_group).unwrap() {
             Some(entry) => {
-                entry.insert(binding, uniform.binding_resource());
+                entry.insert(binding, to_store);
             }
             None => {
                 let mut bindings = BTreeMap::new();
-                bindings.insert(binding, uniform.binding_resource());
+                bindings.insert(binding, to_store);
+                self.binding_groups[bind_group] = Some(bindings);
+            }
+        };
+        // TODO Ensure group and binding are not already used
+        Ok(self)
+    }
+    pub fn add_storage_buffer<T>(
+        &mut self,
+        bind_group: u32,
+        binding: u32,
+        storage_buffer: &'a StorageBuffer<T>,
+    ) -> Result<&mut Self, anyhow::Error>
+    where
+        T: StorageBufferType,
+    {
+        let bind_group_layout_entry = wgpu::BindGroupLayoutEntry {
+            binding,
+            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Storage { read_only: true },
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            count: None,
+        };
+        let bind_group = bind_group as usize;
+        if bind_group >= self.binding_groups.len() {
+            self.binding_groups.resize(bind_group + 1, None);
+        }
+        let to_store = (storage_buffer.binding_resource(), bind_group_layout_entry);
+        match self.binding_groups.get_mut(bind_group).unwrap() {
+            Some(entry) => {
+                entry.insert(binding, to_store);
+            }
+            None => {
+                let mut bindings = BTreeMap::new();
+                bindings.insert(binding, to_store);
                 self.binding_groups[bind_group] = Some(bindings);
             }
         };
@@ -355,17 +433,8 @@ impl<'a> DrawableBuilder<'a> {
             let mut bind_group_layout_entries = Vec::new();
             let mut bind_group_entries = Vec::new();
             if let Some(group) = group {
-                for (bind_id, bind) in group {
-                    bind_group_layout_entries.push(wgpu::BindGroupLayoutEntry {
-                        binding: bind_id,
-                        visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-                        ty: wgpu::BindingType::Buffer {
-                            ty: wgpu::BufferBindingType::Uniform,
-                            has_dynamic_offset: false,
-                            min_binding_size: None,
-                        },
-                        count: None,
-                    });
+                for (bind_id, (bind, entry)) in group {
+                    bind_group_layout_entries.push(entry);
                     bind_group_entries.push(wgpu::BindGroupEntry {
                         binding: bind_id,
                         resource: bind,

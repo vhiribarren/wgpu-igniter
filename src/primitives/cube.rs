@@ -31,6 +31,7 @@ use crate::draw_context::DrawModeParams;
 use crate::draw_context::DrawableBuilder;
 use crate::draw_context::IndexData;
 use crate::draw_context::InstancesAttribute;
+use crate::draw_context::StorageBuffer;
 use crate::draw_context::Uniform;
 use crate::primitives::color;
 use crate::primitives::Object3D;
@@ -284,8 +285,12 @@ pub fn create_cube_with_normals_instances(
     let positions = (0..count)
         .map(|i| [(2 * i) as f32 - 4.0, 0., 0.])
         .collect::<Vec<_>>();
-
     let pos_instance_attribute = InstancesAttribute::new(context, &positions);
+
+    let normals = (0..count)
+        .map(|i| cgmath::Matrix3::identity().into())
+        .collect::<Vec<[[f32; 3]; 3]>>();
+    let normal_mats = StorageBuffer::new_array(context, &normals);
 
     let mut drawable_builder = DrawableBuilder::new(
         context,
@@ -303,8 +308,15 @@ pub fn create_cube_with_normals_instances(
             CUBE_GEOMETRY_DUPLICATES,
             wgpu::VertexFormat::Float32x3,
         )?
-        .add_instances_attribute(1, &pos_instance_attribute)?
-        .add_uniform(0, 0, &uniforms.camera_uniform)?;
+        .add_attribute(
+            1,
+            wgpu::VertexStepMode::Vertex,
+            &CUBE_NORMALS_DUPLICATES,
+            wgpu::VertexFormat::Float32x3,
+        )?
+        .add_instances_attribute(2, &pos_instance_attribute)?
+        .add_uniform(0, 0, &uniforms.camera_uniform)?
+        .add_storage_buffer(1, 1, &normal_mats)?;
 
     if options.with_alpha {
         drawable_builder.set_blend_option(wgpu::BlendState {
