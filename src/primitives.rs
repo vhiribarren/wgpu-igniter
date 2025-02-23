@@ -30,10 +30,10 @@ pub mod triangle;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::draw_context::Uniform;
 use crate::draw_context::{DrawContext, Drawable, StorageBuffer};
-use crate::draw_context::{InstancesAttribute, Uniform};
-use cgmath::SquareMatrix;
 use cgmath::{InnerSpace, Matrix, Matrix3, Matrix4};
+use cgmath::{Rotation3, SquareMatrix};
 
 fn extract_rotation(matrix: Matrix4<f32>) -> Matrix3<f32> {
     // Extract the upper-left 3x3 matrix (which may include scaling)
@@ -126,17 +126,43 @@ impl AsRef<Drawable> for Object3D {
 }
 
 pub struct Object3DInstanceGroupHandlers {
+    count: u32,
     transforms: StorageBuffer<[[f32; 4]; 4]>,
     normal_mats: StorageBuffer<[[f32; 3]; 3]>,
 }
 
-pub struct Object3DInstance<'a> {
-    transforms: &'a mut [[f32; 4]; 4],
+pub struct Object3DInstance {
+    translation: cgmath::Vector3<f32>,
+    rotation: cgmath::Quaternion<f32>,
 }
 
-impl Object3DInstance<'_> {
-    pub fn set_tranform(&mut self, pos: cgmath::Matrix4<f32>) {
-        *self.transforms = pos.into();
+impl Default for Object3DInstance {
+    fn default() -> Self {
+        Object3DInstance {
+            translation: cgmath::Vector3::new(0., 0., 0.),
+            rotation: cgmath::Quaternion::from_axis_angle(
+                cgmath::Vector3::unit_z(),
+                cgmath::Deg(0.),
+            ),
+        }
+    }
+}
+
+impl Object3DInstance {
+    pub fn set_rotation(&mut self, rotation: cgmath::Quaternion<f32>) {
+        self.rotation = rotation;
+    }
+    pub fn apply_rotation(&mut self, rotation: cgmath::Quaternion<f32>) {
+        self.rotation = self.rotation * rotation;
+    }
+    pub fn set_translation(&mut self, translation: cgmath::Vector3<f32>) {
+        self.translation = translation
+    }
+    pub fn apply_translation(&mut self, translation: cgmath::Vector3<f32>) {
+        self.translation += translation;
+    }
+    pub fn get_transform(&self) -> cgmath::Matrix4<f32> {
+        cgmath::Matrix4::from_translation(self.translation) * cgmath::Matrix4::from(self.rotation)
     }
 }
 
@@ -154,22 +180,23 @@ impl Object3DInstanceGroup {
             handlers,
         }
     }
-    pub fn update_instances<F>(&self, context: &DrawContext, f: F)
+    pub fn update_instances<F>(&mut self, context: &DrawContext, f: F)
     where
         F: Fn(usize, &mut Object3DInstance) + 'static + Send,
     {
         let Object3DInstanceGroupHandlers {
+            count,
             transforms,
             normal_mats,
-        } = &self.handlers;
-        let mut data = vec![[[0.0; 4]; 4]; transforms.count];
-        for (idx, transforms) in data.iter_mut().enumerate() {
-            f(idx, &mut Object3DInstance { transforms });
-            // TODO Update normal matrix
+        } = &mut self.handlers;
+        let mut transforms_writer = transforms.start_write(context);
+        let mut normal_mats_writer = normal_mats.start_write(context);
+        for idx in 0..*count as usize {
+            let obj_instance = &mut Object3DInstance::default();
+            f(idx, obj_instance);
+            transforms_writer.set_value(idx, obj_instance.get_transform().into());
+            normal_mats_writer.set_value(idx, Matrix3::from(obj_instance.rotation).into());
         }
-        context
-            .queue
-            .write_buffer(&transforms.remote_buffer, 0, bytemuck::cast_slice(&data));
     }
     pub fn set_opacity(&mut self, value: f32) {
         self.opacity = value.clamp(0., 1.);

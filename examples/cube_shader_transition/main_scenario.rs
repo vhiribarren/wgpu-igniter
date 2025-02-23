@@ -29,7 +29,7 @@ use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
 use wgpu_lite_wrapper::primitives::cube::CubeOptions;
-use wgpu_lite_wrapper::primitives::{cube, Object3D, Shareable, Transforms};
+use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_lite_wrapper::scenario::{Scenario, UpdateContext};
 
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};

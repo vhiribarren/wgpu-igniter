@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use cgmath::{vec3, Matrix4, PerspectiveFov, Rad, Vector3};
+use cgmath::{Matrix4, PerspectiveFov, Rad, Vector3, vec3};
 use cgmath::{Ortho, Point3};
 use log::{debug, warn};
 use std::collections::BTreeSet;

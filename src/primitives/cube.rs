@@ -30,7 +30,6 @@ use crate::draw_context::DrawContext;
 use crate::draw_context::DrawModeParams;
 use crate::draw_context::DrawableBuilder;
 use crate::draw_context::IndexData;
-use crate::draw_context::InstancesAttribute;
 use crate::draw_context::StorageBuffer;
 use crate::draw_context::Uniform;
 use crate::primitives::Object3D;
@@ -284,12 +283,12 @@ pub fn create_cube_with_normals_instances(
     options: CubeOptions,
 ) -> Result<Object3DInstanceGroup, anyhow::Error> {
     let transforms_init = (0..count)
-        .map(|i| cgmath::Matrix4::identity().into())
+        .map(|_| cgmath::Matrix4::identity().into())
         .collect::<Vec<[[f32; 4]; 4]>>();
     let transforms = StorageBuffer::new_array(context, &transforms_init);
 
     let normals = (0..count)
-        .map(|i| cgmath::Matrix3::identity().into())
+        .map(|_| cgmath::Matrix3::identity().into())
         .collect::<Vec<[[f32; 3]; 3]>>();
     let normal_mats = StorageBuffer::new_array(context, &normals);
 
@@ -333,6 +332,7 @@ pub fn create_cube_with_normals_instances(
     Ok(Object3DInstanceGroup::new(
         drawable,
         Object3DInstanceGroupHandlers {
+            count,
             transforms,
             normal_mats,
         },

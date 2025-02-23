@@ -27,7 +27,7 @@ use cgmath::SquareMatrix;
 use crate::draw_context::{DrawContext, DrawableBuilder, Uniform};
 use crate::primitives::Object3D;
 
-use super::{color, Object3DUniforms};
+use super::{Object3DUniforms, color};
 
 #[rustfmt::skip]
 pub const TRIANGLE_GEOMETRY: &[[f32; 3]] = &[
