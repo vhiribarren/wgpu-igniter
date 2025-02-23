@@ -150,12 +150,19 @@ pub trait StorageBufferType: NoUninit {
     type AlignedType: NoUninit;
     fn apply_alignment(&self) -> Self::AlignedType;
  }
- impl StorageBufferType for [[f32; 3]; 3] {
+impl StorageBufferType for [[f32; 3]; 3] {
     type AlignedType = [[f32; 4]; 3];
     fn apply_alignment(&self) -> Self::AlignedType {
         array::from_fn(|i| [self[i][0], self[i][1], self[i][2], 0.])
     }
 }
+impl StorageBufferType for [[f32; 4]; 4] {
+    type AlignedType = [[f32; 4]; 4];
+    fn apply_alignment(&self) -> Self::AlignedType {
+        *self
+    }
+}
+
 
 #[derive(Clone)]
 pub struct StorageBuffer<T: StorageBufferType> {

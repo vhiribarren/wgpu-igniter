@@ -33,8 +33,8 @@ use crate::draw_context::IndexData;
 use crate::draw_context::InstancesAttribute;
 use crate::draw_context::StorageBuffer;
 use crate::draw_context::Uniform;
-use crate::primitives::color;
 use crate::primitives::Object3D;
+use crate::primitives::color;
 use crate::scene::Scene3DUniforms;
 
 use super::Object3DInstanceGroup;
@@ -283,10 +283,10 @@ pub fn create_cube_with_normals_instances(
     count: u32,
     options: CubeOptions,
 ) -> Result<Object3DInstanceGroup, anyhow::Error> {
-    let positions = (0..count)
-        .map(|i| [(2 * i) as f32 - 4.0, 0., 0.])
-        .collect::<Vec<_>>();
-    let pos_instance_attribute = InstancesAttribute::new(context, &positions);
+    let transforms_init = (0..count)
+        .map(|i| cgmath::Matrix4::identity().into())
+        .collect::<Vec<[[f32; 4]; 4]>>();
+    let transforms = StorageBuffer::new_array(context, &transforms_init);
 
     let normals = (0..count)
         .map(|i| cgmath::Matrix3::identity().into())
@@ -315,8 +315,8 @@ pub fn create_cube_with_normals_instances(
             &CUBE_NORMALS_DUPLICATES,
             wgpu::VertexFormat::Float32x3,
         )?
-        .add_instances_attribute(2, &pos_instance_attribute)?
         .add_uniform(0, 0, &uniforms.camera_uniform)?
+        .add_storage_buffer(1, 0, &transforms)?
         .add_storage_buffer(1, 1, &normal_mats)?;
 
     if options.with_alpha {
@@ -330,5 +330,11 @@ pub fn create_cube_with_normals_instances(
         });
     }
     let drawable = drawable_builder.build();
-    Ok(Object3DInstanceGroup::new(drawable, Object3DInstanceGroupHandlers { positions: pos_instance_attribute, normal_mats }))
+    Ok(Object3DInstanceGroup::new(
+        drawable,
+        Object3DInstanceGroupHandlers {
+            transforms,
+            normal_mats,
+        },
+    ))
 }

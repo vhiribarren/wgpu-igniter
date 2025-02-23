@@ -5,7 +5,6 @@ struct VertexInput {
 
 struct InstanceInput {
     @builtin(instance_index) index: u32,
-    @location(2) offset: vec3<f32>,
 };
 
 struct FragmentInput {
@@ -19,8 +18,8 @@ const AMBIANT_COLOR =  vec3<f32>(0.2);
 
 @group(0) @binding(0)
 var<uniform> camera: mat4x4<f32>;
-// @group(1) @binding(0)
-// var<uniform> transform: mat4x4<f32>;
+@group(1) @binding(0)
+var<storage, read> transforms: array<mat4x4<f32>>;
 @group(1) @binding(1)
 var<storage, read> normal_mat: array<mat3x3<f32>>;
 
@@ -28,7 +27,7 @@ var<storage, read> normal_mat: array<mat3x3<f32>>;
 fn vtx_main(vtx_in: VertexInput, inst_in: InstanceInput) -> FragmentInput {
     var out: FragmentInput;
     out.normal = normal_mat[inst_in.index] * vtx_in.normal;
-    out.position = camera * vec4<f32>(vtx_in.position + inst_in.offset, 1.0);
+    out.position = camera *  transforms[inst_in.index] * vec4<f32>(vtx_in.position, 1.0);
     return out;
 }
 

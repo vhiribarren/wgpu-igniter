@@ -24,7 +24,7 @@ SOFTWARE.
 
 use std::rc::Rc;
 
-use cgmath::Vector3;
+use cgmath::{Rotation3, Vector3};
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
@@ -76,7 +76,10 @@ impl Scenario for MainScenario {
         self.cube
             .borrow_mut()
             .update_instances(draw_context, move |index, instance| {
-                instance.set_position(Vector3::new(delta * index as f32, delta* index as f32, 0.));
+                let rotation = cgmath::Quaternion::from_angle_y(cgmath::Deg(index as f32* delta * 45.));
+                let translation = cgmath::Vector3::new(delta * index as f32, delta * index as f32, 0.);
+                let transform = cgmath::Matrix4::from_translation(translation) * cgmath::Matrix4::from(rotation);
+                instance.set_tranform(transform);
             });
     }
 }

@@ -126,17 +126,17 @@ impl AsRef<Drawable> for Object3D {
 }
 
 pub struct Object3DInstanceGroupHandlers {
-    positions: InstancesAttribute<[f32; 3]>,
+    transforms: StorageBuffer<[[f32; 4]; 4]>,
     normal_mats: StorageBuffer<[[f32; 3]; 3]>,
 }
 
 pub struct Object3DInstance<'a> {
-    position: &'a mut [f32; 3],
+    transforms: &'a mut [[f32; 4]; 4],
 }
 
 impl Object3DInstance<'_> {
-    pub fn set_position(&mut self, pos: cgmath::Vector3<f32>) {
-        *self.position = pos.into();
+    pub fn set_tranform(&mut self, pos: cgmath::Matrix4<f32>) {
+        *self.transforms = pos.into();
     }
 }
 
@@ -159,17 +159,17 @@ impl Object3DInstanceGroup {
         F: Fn(usize, &mut Object3DInstance) + 'static + Send,
     {
         let Object3DInstanceGroupHandlers {
-            positions,
+            transforms,
             normal_mats,
         } = &self.handlers;
-        let mut data = vec![[0.0; 3]; positions.count];
-        for (idx, instance) in data.iter_mut().enumerate() {
-            f(idx, &mut Object3DInstance { position: instance });
+        let mut data = vec![[[0.0; 4]; 4]; transforms.count];
+        for (idx, transforms) in data.iter_mut().enumerate() {
+            f(idx, &mut Object3DInstance { transforms });
             // TODO Update normal matrix
         }
         context
             .queue
-            .write_buffer(&positions.instance_buffer, 0, bytemuck::cast_slice(&data));
+            .write_buffer(&transforms.remote_buffer, 0, bytemuck::cast_slice(&data));
     }
     pub fn set_opacity(&mut self, value: f32) {
         self.opacity = value.clamp(0., 1.);
