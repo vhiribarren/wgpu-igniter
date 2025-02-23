@@ -27,7 +27,7 @@ use std::rc::Rc;
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
-use wgpu_lite_wrapper::primitives::{cube, Object3D, Shareable, Transforms};
+use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_lite_wrapper::scenario::{Scenario, UpdateContext};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
@@ -46,21 +46,14 @@ impl MainScenario {
         let camera = WinitCameraAdapter::new(PerspectiveConfig::default().into());
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut scene = Scene3D::new(draw_context);
-        let cube = {
-            let mut cube_obj = cube::create_cube_with_normals(
-                draw_context,
-                &shader_module,
-                &shader_module,
-                scene.scene_uniforms(),
-                Default::default(),
-            )
-            .unwrap();
-            cube_obj.set_transform(
-                draw_context,
-                cgmath::Matrix4::from_translation(cgmath::Vector3::new(-0.5, -0.5, -0.5)),
-            );
-            cube_obj
-        }
+        let cube = cube::create_cube_with_normals(
+            draw_context,
+            &shader_module,
+            &shader_module,
+            scene.scene_uniforms(),
+            Default::default(),
+        )
+        .unwrap()
         .into_shareable();
         scene.add(cube.clone());
         Self {
