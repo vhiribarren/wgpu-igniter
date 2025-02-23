@@ -158,42 +158,60 @@ pub trait StorageBufferType: NoUninit {
 }
 
 #[derive(Clone)]
-pub struct StorageBuffer<T> {
+pub struct StorageBuffer<T: StorageBufferType> {
     pub(crate) count: usize,
-    pub(crate) storage_buffer: Arc<wgpu::Buffer>,
-    _type: PhantomData<T>,
+    pub(crate) remote_buffer: Arc<wgpu::Buffer>,
+    local_buffer: Vec<T::AlignedType>,
 }
 
 impl<T: StorageBufferType> StorageBuffer<T> {
     pub fn new_array(context: &DrawContext, data_init: &[T]) -> Self {
-        let aligned_data: Vec<T::AlignedType> = data_init.iter().map(|item| item.apply_alignment()).collect();
+        let local_buffer: Vec<T::AlignedType> = data_init.iter().map(|item| item.apply_alignment()).collect();
         Self {
             count: data_init.len(),
-            storage_buffer: Arc::new(context.device.create_buffer_init(&BufferInitDescriptor {
-            label: Some("Storage Buffer"),
-            contents: bytemuck::cast_slice(&aligned_data),
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::STORAGE,
+            remote_buffer: Arc::new(context.device.create_buffer_init(&BufferInitDescriptor {
+                label: Some("Storage Buffer"),
+                contents: bytemuck::cast_slice(&local_buffer),
+                usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::STORAGE,
             })),
-            _type: PhantomData,
+            local_buffer
         }
     }
     pub fn binding_resource(&self) -> wgpu::BindingResource {
-        self.storage_buffer.as_entire_binding()
+        self.remote_buffer.as_entire_binding()
     }
-/*
-    pub fn read_uniform(&self) -> &T {
-        &self.value
+    pub fn start_write<'a>(&'a mut self, context: &'a DrawContext) -> StorageBufferWriteGuard<'a, T> {
+        StorageBufferWriteGuard {context, storage_buffer: self}
     }
-    pub fn write_uniform(&mut self, context: &DrawContext, data: T) {
-        self.value = data;
-        context.queue.write_buffer(
-            &self.buffer,
+}
+
+pub struct  StorageBufferWriteGuard<'a, T: StorageBufferType> {
+    context: &'a DrawContext,
+    storage_buffer: &'a mut StorageBuffer<T>
+}
+
+impl <'a, T: StorageBufferType> StorageBufferWriteGuard<'a, T> {
+    pub fn apply_write(self) {
+        drop(self);
+    }
+    pub fn len(&self) -> usize {
+        self.storage_buffer.count
+    }
+    pub fn set_value(&mut self, index: usize, value: T) {
+        self.storage_buffer.local_buffer[index] = value.apply_alignment();
+    }
+}
+
+impl<'a, T: StorageBufferType> Drop for StorageBufferWriteGuard<'a, T> {
+    fn drop(&mut self) {
+        self.context.queue.write_buffer(
+            &self.storage_buffer.remote_buffer,
             0 as wgpu::BufferAddress,
-            bytemuck::cast_slice(&[self.value.apply_alignment()]),
+            bytemuck::cast_slice(&self.storage_buffer.local_buffer),
         );
     }
-    */
 }
+
 
 pub trait InstancesAttributeType: NoUninit {
     fn vertex_format() -> wgpu::VertexFormat;

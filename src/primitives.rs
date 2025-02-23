@@ -30,7 +30,7 @@ pub mod triangle;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::draw_context::{DrawContext, Drawable};
+use crate::draw_context::{DrawContext, Drawable, StorageBuffer};
 use crate::draw_context::{InstancesAttribute, Uniform};
 use cgmath::SquareMatrix;
 use cgmath::{InnerSpace, Matrix, Matrix3, Matrix4};
@@ -125,6 +125,11 @@ impl AsRef<Drawable> for Object3D {
     }
 }
 
+pub struct Object3DInstanceGroupHandlers {
+    positions: InstancesAttribute<[f32; 3]>,
+    normal_mats: StorageBuffer<[[f32; 3]; 3]>,
+}
+
 pub struct Object3DInstance<'a> {
     position: &'a mut [f32; 3],
 }
@@ -138,30 +143,33 @@ impl Object3DInstance<'_> {
 pub struct Object3DInstanceGroup {
     drawable: Drawable,
     opacity: f32,
-    positions: InstancesAttribute<[f32; 3]>,
+    handlers: Object3DInstanceGroupHandlers,
 }
 
 impl Object3DInstanceGroup {
-    pub fn new(drawable: Drawable, positions: InstancesAttribute<[f32; 3]>) -> Self {
+    pub fn new(drawable: Drawable, handlers: Object3DInstanceGroupHandlers) -> Self {
         Self {
             drawable,
             opacity: 0.,
-            positions,
+            handlers,
         }
     }
     pub fn update_instances<F>(&self, context: &DrawContext, f: F)
     where
         F: Fn(usize, &mut Object3DInstance) + 'static + Send,
     {
-        let mut data = vec![[0.0; 3]; self.positions.count];
+        let Object3DInstanceGroupHandlers {
+            positions,
+            normal_mats,
+        } = &self.handlers;
+        let mut data = vec![[0.0; 3]; positions.count];
         for (idx, instance) in data.iter_mut().enumerate() {
             f(idx, &mut Object3DInstance { position: instance });
+            // TODO Update normal matrix
         }
-        context.queue.write_buffer(
-            &self.positions.instance_buffer,
-            0,
-            bytemuck::cast_slice(&data),
-        );
+        context
+            .queue
+            .write_buffer(&positions.instance_buffer, 0, bytemuck::cast_slice(&data));
     }
     pub fn set_opacity(&mut self, value: f32) {
         self.opacity = value.clamp(0., 1.);

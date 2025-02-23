@@ -38,6 +38,7 @@ use crate::primitives::Object3D;
 use crate::scene::Scene3DUniforms;
 
 use super::Object3DInstanceGroup;
+use super::Object3DInstanceGroupHandlers;
 use super::Object3DUniforms;
 
 #[rustfmt::skip]
@@ -329,5 +330,5 @@ pub fn create_cube_with_normals_instances(
         });
     }
     let drawable = drawable_builder.build();
-    Ok(Object3DInstanceGroup::new(drawable, pos_instance_attribute))
+    Ok(Object3DInstanceGroup::new(drawable, Object3DInstanceGroupHandlers { positions: pos_instance_attribute, normal_mats }))
 }
