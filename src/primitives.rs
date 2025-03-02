@@ -159,9 +159,9 @@ impl Object3DInstanceGroupHandlers {
             .zip(normals_iter)
             .for_each(|(((idx, obj_instance), t), n)| {
                 f(idx, obj_instance);
+                // TODO Alignement should be more invisible/hidden to apply, is there a way?
                 *t = Into::<[[f32; 4]; 4]>::into(obj_instance.get_transform()).apply_alignment();
-                *n = Into::<[[f32; 3]; 3]>::into(Matrix3::from(obj_instance.rotation))
-                    .apply_alignment()
+                *n = Into::<[[f32; 3]; 3]>::into(obj_instance.get_normal_matrix()).apply_alignment()
             });
     }
 }
@@ -199,6 +199,9 @@ impl Object3DInstance {
     }
     pub fn get_transform(&self) -> cgmath::Matrix4<f32> {
         cgmath::Matrix4::from_translation(self.translation) * cgmath::Matrix4::from(self.rotation)
+    }
+    pub fn get_normal_matrix(&self) -> cgmath::Matrix3<f32> {
+        cgmath::Matrix3::from(self.rotation)
     }
 }
 
