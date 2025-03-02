@@ -35,12 +35,13 @@ use crate::draw_context::{self, Dimensions, DrawContext};
 use crate::scenario::{
     UpdateContext, UpdateInterval, WinitEventLoopBuilder, WinitEventLoopHandler,
 };
-use log::debug;
+use log::{debug, info};
 
 #[cfg(target_arch = "wasm32")]
 const WEBAPP_CANVAS_ID: &str = "target";
 
 const TARGET_DRAW_FPS: f64 = 60.0;
+const TARGET_FPS_DISPLAY_PERIOD: Duration = Duration::from_secs(1);
 
 struct MouseState {
     pub is_cursor_inside: bool,
@@ -95,6 +96,7 @@ struct App {
     mouse_state: MouseState,
     scenario_start: Instant,
     last_draw_instant: Instant,
+    last_fps_instant: Instant,
     draw_period_target: Duration,
     draw_context: DrawContext,
     scenario: Box<dyn WinitEventLoopHandler>,
@@ -110,6 +112,7 @@ impl App {
         let mouse_state = MouseState::new();
         let scenario_start = Instant::now();
         let last_draw_instant = scenario_start;
+        let last_fps_instant = scenario_start;
         let draw_period_target = Duration::from_secs_f64(1.0 / TARGET_DRAW_FPS);
         let draw_context = draw_context::DrawContext::new(Arc::clone(&window), dimensions)
             .await
@@ -120,6 +123,7 @@ impl App {
             mouse_state,
             scenario_start,
             last_draw_instant,
+            last_fps_instant,
             draw_period_target,
             draw_context,
             scenario,
@@ -230,6 +234,10 @@ impl ApplicationHandler<App> for AppHandlerState {
             WindowEvent::RedrawRequested { .. } => {
                 let update_delta = app.last_draw_instant.elapsed();
                 app.last_draw_instant = Instant::now();
+                if app.last_fps_instant.elapsed() >= TARGET_FPS_DISPLAY_PERIOD {
+                    info!("FPS: {}", (1.0 / update_delta.as_secs_f64()).round() as usize);
+                    app.last_fps_instant =  app.last_draw_instant;
+                };
                 app.scenario.on_update(&UpdateContext {
                     draw_context: &app.draw_context,
                     update_interval: &UpdateInterval {

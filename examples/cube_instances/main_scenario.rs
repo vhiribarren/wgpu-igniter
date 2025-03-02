@@ -34,8 +34,8 @@ use wgpu_lite_wrapper::scenario::{Scenario, UpdateContext};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
 const DEFAULT_SHADER: &str = include_str!("cube_instances.wgsl");
-const CUBE_WIDTH_COUNT: usize = 100;
-const CUBE_DEPTH_COUNT: usize = 100;
+const CUBE_WIDTH_COUNT: usize = 50;
+const CUBE_DEPTH_COUNT: usize = 50;
 const CUBE_OFFSET: f32 = 2.0;
 
 pub struct MainScenario {
