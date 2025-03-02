@@ -149,29 +149,28 @@ impl Camera {
     pub fn get_camera_matrix(&self) -> Matrix4<f32> {
         (*TO_WEBGPU_NDCS) * self.projection * (*SWITCH_Z_AXIS) * self.view
     }
-    fn move_z(&mut self, val: f32) {
+    pub fn move_z(&mut self, val: f32) {
         self.view = Matrix4::from_translation(Vector3::new(0., 0., -val)) * self.view;
     }
-    fn move_x(&mut self, val: f32) {
+    pub fn move_x(&mut self, val: f32) {
         self.view = Matrix4::from_translation(Vector3::new(-val, 0., 0.)) * self.view;
     }
-    fn move_y(&mut self, val: f32) {
+    pub fn move_y(&mut self, val: f32) {
         self.view = Matrix4::from_translation(Vector3::new(0., -val, 0.)) * self.view;
     }
-    fn pan(&mut self, val: f32) {
+    pub fn pan(&mut self, val: f32) {
         self.view = Matrix4::from_angle_y(Rad(-val)) * self.view;
     }
-    fn tilt(&mut self, val: f32) {
+    pub fn tilt(&mut self, val: f32) {
         self.view = Matrix4::from_angle_x(Rad(-val)) * self.view;
     }
-    #[allow(dead_code)]
-    fn roll(&mut self, val: f32) {
+    pub fn roll(&mut self, val: f32) {
         self.view = Matrix4::from_angle_z(Rad(-val)) * self.view;
     }
 }
 
 pub struct WinitCameraAdapter {
-    camera: Camera,
+    pub camera: Camera,
     enabled_keys: BTreeSet<KeyCode>,
     key_speed: f32,
     rotation_speed: f32,

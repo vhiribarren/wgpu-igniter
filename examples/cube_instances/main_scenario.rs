@@ -34,9 +34,9 @@ use wgpu_lite_wrapper::scenario::{Scenario, UpdateContext};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
 const DEFAULT_SHADER: &str = include_str!("cube_instances.wgsl");
-const CUBE_WIDTH_COUNT: usize = 10;
-const CUBE_DEPTH_COUNT: usize = 10;
-const CUBE_OFFSET: f32 = 1.5;
+const CUBE_WIDTH_COUNT: usize = 100;
+const CUBE_DEPTH_COUNT: usize = 100;
+const CUBE_OFFSET: f32 = 2.0;
 
 pub struct MainScenario {
     pub cube: Rc<RefCell<Object3DInstanceGroup>>,
@@ -46,7 +46,17 @@ pub struct MainScenario {
 
 impl MainScenario {
     pub fn new(draw_context: &DrawContext) -> Self {
-        let camera = WinitCameraAdapter::new(PerspectiveConfig::default().into());
+        let camera = WinitCameraAdapter::new(
+            PerspectiveConfig {
+                eye: cgmath::Point3 {
+                    x: 0.0,
+                    y: 5.0,
+                    z: -15.0,
+                },
+                ..Default::default()
+            }
+            .into(),
+        );
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut scene = Scene3D::new(draw_context);
         let cube = {
@@ -63,9 +73,9 @@ impl MainScenario {
                 let x = (idx % CUBE_WIDTH_COUNT) as f32;
                 let z = (idx / CUBE_WIDTH_COUNT) as f32;
                 instance.set_translation(cgmath::Vector3::new(
-                    x * CUBE_OFFSET - (CUBE_WIDTH_COUNT as f32 * CUBE_OFFSET) / 2.0,
+                    x * CUBE_OFFSET - (CUBE_WIDTH_COUNT as f32 * CUBE_OFFSET) / 2.0 + 1.0,
                     0.0,
-                    z * CUBE_OFFSET - (CUBE_DEPTH_COUNT as f32 * CUBE_OFFSET) / 2.0,
+                    z * CUBE_OFFSET - (CUBE_DEPTH_COUNT as f32 * CUBE_OFFSET) / 2.0 + 1.0,
                 ));
             });
             cube_init.into_shareable()
@@ -87,16 +97,15 @@ impl Scenario for MainScenario {
             draw_context,
             update_interval,
         } = update_context;
-        let delta = update_interval.scenario_start.elapsed().as_secs_f32().cos();
-        // self.cube
-        //     .borrow_mut()
-        //     .update_instances(draw_context, move |index, instance| {
-        //         let rotation =
-        //             cgmath::Quaternion::from_angle_y(cgmath::Deg(index as f32 * delta * 45.));
-        //         let translation =
-        //             cgmath::Vector3::new(delta * index as f32, delta * index as f32, 0.);
-        //         //instance.set_translation(translation);
-        //         //instance.set_rotation(rotation);
-        //     });
+        let delta = update_interval.update_delta.as_secs_f32();
+        self.cube
+            .borrow_mut()
+            .update_instances(draw_context, move |index, instance| {
+                let rotation = cgmath::Quaternion::from_axis_angle(
+                    cgmath::Vector3::new((index as f32).cos(), (index as f32).sin(), 0.),
+                    cgmath::Deg(50. * delta),
+                );
+                instance.apply_rotation(rotation);
+            });
     }
 }

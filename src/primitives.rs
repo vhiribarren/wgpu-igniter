@@ -126,11 +126,34 @@ impl AsRef<Drawable> for Object3D {
 }
 
 pub struct Object3DInstanceGroupHandlers {
-    count: u32,
+    instances: Vec<Object3DInstance>,
     transforms: StorageBuffer<[[f32; 4]; 4]>,
     normal_mats: StorageBuffer<[[f32; 3]; 3]>,
 }
 
+impl Object3DInstanceGroupHandlers {
+    pub fn new(context: &DrawContext, count: u32) -> Self {
+        Object3DInstanceGroupHandlers {
+            instances: vec![Object3DInstance::default(); count as usize],
+            transforms: StorageBuffer::new_array(context, &vec![[[0.; 4]; 4]; count as usize]),
+            normal_mats: StorageBuffer::new_array(context, &vec![[[0.; 3]; 3]; count as usize]),
+        }
+    }
+    pub fn update_instances<F>(&mut self, context: &DrawContext, f: F)
+    where
+        F: Fn(usize, &mut Object3DInstance) + 'static + Send,
+    {
+        let mut transforms_writer = self.transforms.start_write(context);
+        let mut normal_mats_writer = self.normal_mats.start_write(context);
+        for (idx, obj_instance) in self.instances.iter_mut().enumerate() {
+            f(idx, obj_instance);
+            transforms_writer.set_value(idx, obj_instance.get_transform().into());
+            normal_mats_writer.set_value(idx, Matrix3::from(obj_instance.rotation).into());
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct Object3DInstance {
     translation: cgmath::Vector3<f32>,
     rotation: cgmath::Quaternion<f32>,
@@ -184,19 +207,7 @@ impl Object3DInstanceGroup {
     where
         F: Fn(usize, &mut Object3DInstance) + 'static + Send,
     {
-        let Object3DInstanceGroupHandlers {
-            count,
-            transforms,
-            normal_mats,
-        } = &mut self.handlers;
-        let mut transforms_writer = transforms.start_write(context);
-        let mut normal_mats_writer = normal_mats.start_write(context);
-        for idx in 0..*count as usize {
-            let obj_instance = &mut Object3DInstance::default();
-            f(idx, obj_instance);
-            transforms_writer.set_value(idx, obj_instance.get_transform().into());
-            normal_mats_writer.set_value(idx, Matrix3::from(obj_instance.rotation).into());
-        }
+        self.handlers.update_instances(context, f);
     }
     pub fn set_opacity(&mut self, value: f32) {
         self.opacity = value.clamp(0., 1.);
