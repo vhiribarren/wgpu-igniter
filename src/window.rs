@@ -212,6 +212,7 @@ impl ApplicationHandler<App> for AppHandlerState {
                     .resize(physical_size.width, physical_size.height);
             }
             WindowEvent::KeyboardInput { ref event, .. } => {
+                debug!("Key pressed {:?}", event.physical_key);
                 app.scenario.on_keyboard_event(event);
             }
             WindowEvent::Moved { .. } => {
@@ -235,8 +236,11 @@ impl ApplicationHandler<App> for AppHandlerState {
                 let update_delta = app.last_draw_instant.elapsed();
                 app.last_draw_instant = Instant::now();
                 if app.last_fps_instant.elapsed() >= TARGET_FPS_DISPLAY_PERIOD {
-                    info!("FPS: {}", (1.0 / update_delta.as_secs_f64()).round() as usize);
-                    app.last_fps_instant =  app.last_draw_instant;
+                    info!(
+                        "FPS: {}",
+                        (1.0 / update_delta.as_secs_f64()).round() as usize
+                    );
+                    app.last_fps_instant = app.last_draw_instant;
                 };
                 app.scenario.on_update(&UpdateContext {
                     draw_context: &app.draw_context,

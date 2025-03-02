@@ -179,6 +179,7 @@ pub struct WinitCameraAdapter {
 impl WinitCameraAdapter {
     const DEFAULT_KEY_SPEED: f32 = 0.03;
     const DEFAULT_ROTATION_SPEED: f32 = 1.0 / 500.0;
+    const SPEED_MULTIPLICATOR: f32 = 10.0;
 
     pub fn new(camera: Camera) -> Self {
         WinitCameraAdapter {
@@ -222,14 +223,22 @@ impl WinitCameraAdapter {
         if self.enabled_keys.is_empty() {
             return;
         }
+        let mut key_speed = self.key_speed;
+        if self.enabled_keys.contains(&KeyCode::ShiftLeft)
+            || self.enabled_keys.contains(&KeyCode::ShiftRight)
+        {
+            key_speed *= Self::SPEED_MULTIPLICATOR;
+        }
         for key in self.enabled_keys.iter() {
             match *key {
-                KeyCode::ArrowUp => self.camera.move_z(self.key_speed),
-                KeyCode::ArrowDown => self.camera.move_z(-self.key_speed),
-                KeyCode::ArrowLeft => self.camera.move_x(-self.key_speed),
-                KeyCode::ArrowRight => self.camera.move_x(self.key_speed),
-                KeyCode::PageUp => self.camera.move_y(self.key_speed),
-                KeyCode::PageDown => self.camera.move_y(-self.key_speed),
+                KeyCode::ArrowUp => self.camera.move_z(key_speed),
+                KeyCode::ArrowDown => self.camera.move_z(-key_speed),
+                KeyCode::ArrowLeft => self.camera.move_x(-key_speed),
+                KeyCode::ArrowRight => self.camera.move_x(key_speed),
+                KeyCode::PageUp => self.camera.move_y(key_speed),
+                KeyCode::PageDown => self.camera.move_y(-key_speed),
+                KeyCode::Home => self.camera.roll(-key_speed / 2.0),
+                KeyCode::End => self.camera.roll(key_speed / 2.0),
                 _ => {}
             };
         }
