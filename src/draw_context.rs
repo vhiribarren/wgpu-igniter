@@ -166,7 +166,7 @@ impl StorageBufferType for [[f32; 4]; 4] {
 pub struct StorageBuffer<T: StorageBufferType> {
     pub(crate) count: usize,
     pub(crate) remote_buffer: Arc<wgpu::Buffer>,
-    local_buffer: Vec<T::AlignedType>,
+    pub local_buffer: Vec<T::AlignedType>, // FIXME Should I avoid it being public?
 }
 
 impl<T: StorageBufferType> StorageBuffer<T> {
@@ -201,7 +201,7 @@ impl<T: StorageBufferType> StorageBuffer<T> {
 
 pub struct StorageBufferWriteGuard<'a, T: StorageBufferType> {
     context: &'a DrawContext,
-    storage_buffer: &'a mut StorageBuffer<T>,
+    pub storage_buffer: &'a mut StorageBuffer<T>, // FIXME Should I avoid it being public?
 }
 
 impl<T: StorageBufferType> StorageBufferWriteGuard<'_, T> {
@@ -213,6 +213,9 @@ impl<T: StorageBufferType> StorageBufferWriteGuard<'_, T> {
     }
     pub fn set_value(&mut self, index: usize, value: T) {
         self.storage_buffer.local_buffer[index] = value.apply_alignment();
+    }
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut T::AlignedType> {
+        self.storage_buffer.local_buffer.iter_mut()
     }
 }
 
@@ -237,7 +240,6 @@ impl InstancesAttributeType for [f32; 3] {
 
 #[derive(Clone)]
 pub struct InstancesAttribute<T> {
-    pub(crate) count: usize,
     pub(crate) instance_buffer: Arc<wgpu::Buffer>,
     _type: PhantomData<T>,
 }
@@ -245,7 +247,6 @@ pub struct InstancesAttribute<T> {
 impl<T: InstancesAttributeType> InstancesAttribute<T> {
     pub fn new(context: &DrawContext, data_init: &[T]) -> Self {
         Self {
-            count: data_init.len(),
             instance_buffer: Arc::new(context.device.create_buffer_init(&BufferInitDescriptor {
                 label: None,
                 contents: bytemuck::cast_slice(data_init),

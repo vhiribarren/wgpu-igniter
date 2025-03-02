@@ -30,10 +30,11 @@ pub mod triangle;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::draw_context::Uniform;
 use crate::draw_context::{DrawContext, Drawable, StorageBuffer};
+use crate::draw_context::{Uniform, UnitformType};
 use cgmath::{InnerSpace, Matrix, Matrix3, Matrix4};
 use cgmath::{Rotation3, SquareMatrix};
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefMutIterator, ParallelIterator};
 
 fn extract_rotation(matrix: Matrix4<f32>) -> Matrix3<f32> {
     // Extract the upper-left 3x3 matrix (which may include scaling)
@@ -141,15 +142,27 @@ impl Object3DInstanceGroupHandlers {
     }
     pub fn update_instances<F>(&mut self, context: &DrawContext, f: F)
     where
-        F: Fn(usize, &mut Object3DInstance) + 'static + Send,
+        F: Fn(usize, &mut Object3DInstance) + 'static + Send + Sync,
     {
-        let mut transforms_writer = self.transforms.start_write(context);
-        let mut normal_mats_writer = self.normal_mats.start_write(context);
-        for (idx, obj_instance) in self.instances.iter_mut().enumerate() {
-            f(idx, obj_instance);
-            transforms_writer.set_value(idx, obj_instance.get_transform().into());
-            normal_mats_writer.set_value(idx, Matrix3::from(obj_instance.rotation).into());
-        }
+        let transforms_writer = self.transforms.start_write(context);
+        let transforms_iter = transforms_writer.storage_buffer.local_buffer.par_iter_mut();
+        let normal_mats_writer = self.normal_mats.start_write(context);
+        let normals_iter = normal_mats_writer
+            .storage_buffer
+            .local_buffer
+            .par_iter_mut();
+
+        self.instances
+            .par_iter_mut()
+            .enumerate()
+            .zip(transforms_iter)
+            .zip(normals_iter)
+            .for_each(|(((idx, obj_instance), t), n)| {
+                f(idx, obj_instance);
+                *t = Into::<[[f32; 4]; 4]>::into(obj_instance.get_transform()).apply_alignment();
+                *n = Into::<[[f32; 3]; 3]>::into(Matrix3::from(obj_instance.rotation))
+                    .apply_alignment()
+            });
     }
 }
 
@@ -205,7 +218,7 @@ impl Object3DInstanceGroup {
     }
     pub fn update_instances<F>(&mut self, context: &DrawContext, f: F)
     where
-        F: Fn(usize, &mut Object3DInstance) + 'static + Send,
+        F: Fn(usize, &mut Object3DInstance) + 'static + Send + Sync,
     {
         self.handlers.update_instances(context, f);
     }
