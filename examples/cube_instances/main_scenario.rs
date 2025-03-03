@@ -29,6 +29,7 @@ use cgmath::Rotation3;
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
+use wgpu_lite_wrapper::primitives::cube::CubeOptions;
 use wgpu_lite_wrapper::primitives::{Object3DInstanceGroup, Shareable, cube};
 use wgpu_lite_wrapper::scenario::{Scenario, UpdateContext};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
@@ -45,6 +46,8 @@ pub struct MainScenario {
 }
 
 impl MainScenario {
+    #[allow(clippy::cast_possible_truncation)]
+    #[allow(clippy::cast_precision_loss)]
     pub fn new(draw_context: &DrawContext) -> Self {
         let camera = WinitCameraAdapter::new(
             PerspectiveConfig {
@@ -66,16 +69,22 @@ impl MainScenario {
                 &shader_module,
                 scene.scene_uniforms(),
                 (CUBE_WIDTH_COUNT * CUBE_DEPTH_COUNT) as u32,
-                Default::default(),
+                CubeOptions::default(),
             )
             .unwrap();
             cube_init.update_instances(draw_context, |idx, instance| {
                 let x = (idx % CUBE_WIDTH_COUNT) as f32;
                 let z = (idx / CUBE_WIDTH_COUNT) as f32;
                 instance.set_translation(cgmath::Vector3::new(
-                    x * CUBE_OFFSET - (CUBE_WIDTH_COUNT as f32 * CUBE_OFFSET) / 2.0 + 1.0,
+                    x.mul_add(
+                        CUBE_OFFSET,
+                        -((CUBE_WIDTH_COUNT as f32 * CUBE_OFFSET) / 2.0),
+                    ),
                     0.0,
-                    z * CUBE_OFFSET - (CUBE_DEPTH_COUNT as f32 * CUBE_OFFSET) / 2.0 + 1.0,
+                    z.mul_add(
+                        CUBE_OFFSET,
+                        -((CUBE_DEPTH_COUNT as f32 * CUBE_OFFSET) / 2.0),
+                    ),
                 ));
             });
             cube_init.into_shareable()
@@ -92,6 +101,7 @@ impl MainScenario {
 impl Scenario for MainScenario {
     gen_camera_scene!(camera, scene);
 
+    #[allow(clippy::cast_precision_loss)]
     fn on_update(&mut self, update_context: &UpdateContext) {
         let &UpdateContext {
             draw_context,

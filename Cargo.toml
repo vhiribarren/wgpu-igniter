@@ -2,6 +2,11 @@
 name = "wgpu-lite-wrapper"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+repository = "https://github.com/vhiribarren/wgpu-lite-wrapper"
+categories = ["graphics"]
+keywords = ["wgpu", "graphics", "webgpu"]
+description = "A lightweight wrapper around wgpu-rs to simplify the creation of 3D applications."
 
 [dependencies]
 anyhow = "1.0.95"

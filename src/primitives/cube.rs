@@ -315,7 +315,7 @@ pub fn create_cube_with_normals_instances(
                 dst_factor: wgpu::BlendFactor::OneMinusConstant,
                 operation: wgpu::BlendOperation::Add,
             },
-            alpha: Default::default(),
+            alpha: wgpu::BlendComponent::default(),
         });
     }
     let drawable = drawable_builder.build();

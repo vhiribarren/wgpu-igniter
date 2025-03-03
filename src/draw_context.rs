@@ -62,18 +62,22 @@ pub enum IndexData<'a> {
 }
 
 impl IndexData<'_> {
+    #[must_use]
     pub fn format(&self) -> wgpu::IndexFormat {
         match self {
             IndexData::U32(_) => wgpu::IndexFormat::Uint32,
             IndexData::U16(_) => wgpu::IndexFormat::Uint16,
         }
     }
+    #[must_use]
+    #[allow(clippy::cast_possible_truncation)]
     pub fn size(&self) -> u32 {
         match self {
             IndexData::U32(data) => data.len() as u32,
             IndexData::U16(data) => data.len() as u32,
         }
     }
+    #[must_use]
     pub fn data(&self) -> &[u8] {
         match self {
             IndexData::U32(data) => bytemuck::cast_slice(data),
@@ -173,7 +177,7 @@ impl<T: StorageBufferType> StorageBuffer<T> {
     pub fn new_array(context: &DrawContext, data_init: &[T]) -> Self {
         let local_buffer: Vec<T::AlignedType> = data_init
             .iter()
-            .map(|item| item.apply_alignment())
+            .map(StorageBufferType::apply_alignment)
             .collect();
         Self {
             count: data_init.len(),
@@ -185,6 +189,7 @@ impl<T: StorageBufferType> StorageBuffer<T> {
             local_buffer,
         }
     }
+    #[must_use]
     pub fn binding_resource(&self) -> wgpu::BindingResource {
         self.remote_buffer.as_entire_binding()
     }
@@ -208,6 +213,7 @@ impl<T: StorageBufferType> StorageBufferWriteGuard<'_, T> {
     pub fn apply_write(self) {
         drop(self);
     }
+    #[must_use]
     pub fn count(&self) -> usize {
         self.storage_buffer.count
     }
@@ -343,15 +349,12 @@ impl<'a> DrawableBuilder<'a> {
             self.binding_groups.resize(bind_group + 1, None);
         }
         let to_store = (uniform.binding_resource(), bind_group_layout_entry);
-        match self.binding_groups.get_mut(bind_group).unwrap() {
-            Some(entry) => {
-                entry.insert(binding, to_store);
-            }
-            None => {
-                let mut bindings = BTreeMap::new();
-                bindings.insert(binding, to_store);
-                self.binding_groups[bind_group] = Some(bindings);
-            }
+        if let Some(entry) = self.binding_groups.get_mut(bind_group).unwrap() {
+            entry.insert(binding, to_store);
+        } else {
+            let mut bindings = BTreeMap::new();
+            bindings.insert(binding, to_store);
+            self.binding_groups[bind_group] = Some(bindings);
         };
         // TODO Ensure group and binding are not already used
         Ok(self)
@@ -380,15 +383,12 @@ impl<'a> DrawableBuilder<'a> {
             self.binding_groups.resize(bind_group + 1, None);
         }
         let to_store = (storage_buffer.binding_resource(), bind_group_layout_entry);
-        match self.binding_groups.get_mut(bind_group).unwrap() {
-            Some(entry) => {
-                entry.insert(binding, to_store);
-            }
-            None => {
-                let mut bindings = BTreeMap::new();
-                bindings.insert(binding, to_store);
-                self.binding_groups[bind_group] = Some(bindings);
-            }
+        if let Some(entry) = self.binding_groups.get_mut(bind_group).unwrap() {
+            entry.insert(binding, to_store);
+        } else {
+            let mut bindings = BTreeMap::new();
+            bindings.insert(binding, to_store);
+            self.binding_groups[bind_group] = Some(bindings);
         };
         // TODO Ensure group and binding are not already used
         Ok(self)

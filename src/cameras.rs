@@ -146,6 +146,7 @@ pub struct Camera {
 }
 
 impl Camera {
+    #[must_use]
     pub fn get_camera_matrix(&self) -> Matrix4<f32> {
         (*TO_WEBGPU_NDCS) * self.projection * (*SWITCH_Z_AXIS) * self.view
     }
@@ -181,6 +182,7 @@ impl WinitCameraAdapter {
     const DEFAULT_ROTATION_SPEED: f32 = 1.0 / 500.0;
     const SPEED_MULTIPLICATOR: f32 = 10.0;
 
+    #[must_use]
     pub fn new(camera: Camera) -> Self {
         WinitCameraAdapter {
             camera,
@@ -194,6 +196,7 @@ impl WinitCameraAdapter {
         self.camera.get_camera_matrix()
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     pub fn mouse_event_listener(&mut self, event: &DeviceEvent) {
         match event {
             DeviceEvent::MouseMotion { delta } => {
@@ -229,7 +232,7 @@ impl WinitCameraAdapter {
         {
             key_speed *= Self::SPEED_MULTIPLICATOR;
         }
-        for key in self.enabled_keys.iter() {
+        for key in &self.enabled_keys {
             match *key {
                 KeyCode::ArrowUp => self.camera.move_z(key_speed),
                 KeyCode::ArrowDown => self.camera.move_z(-key_speed),

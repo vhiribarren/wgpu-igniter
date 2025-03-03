@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#![warn(clippy::pedantic, clippy::nursery)]
+
 mod main_scenario;
 
 use main_scenario::MainScenario;

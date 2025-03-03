@@ -161,7 +161,8 @@ impl Object3DInstanceGroupHandlers {
                 f(idx, obj_instance);
                 // TODO Alignement should be more invisible/hidden to apply, is there a way?
                 *t = Into::<[[f32; 4]; 4]>::into(obj_instance.get_transform()).apply_alignment();
-                *n = Into::<[[f32; 3]; 3]>::into(obj_instance.get_normal_matrix()).apply_alignment()
+                *n =
+                    Into::<[[f32; 3]; 3]>::into(obj_instance.get_normal_matrix()).apply_alignment();
             });
     }
 }
@@ -192,7 +193,7 @@ impl Object3DInstance {
         self.rotation = self.rotation * rotation;
     }
     pub fn set_translation(&mut self, translation: cgmath::Vector3<f32>) {
-        self.translation = translation
+        self.translation = translation;
     }
     pub fn apply_translation(&mut self, translation: cgmath::Vector3<f32>) {
         self.translation += translation;
