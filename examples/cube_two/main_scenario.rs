@@ -75,14 +75,16 @@ impl MainScenario {
         )
         .unwrap()
         .into_shareable();
-        cube_left.borrow_mut().set_transform(
-            draw_context,
-            cgmath::Matrix4::from_translation(cgmath::Vector3::new(-0.5, 0.0, 5.0)),
-        );
-        cube_right.borrow_mut().set_transform(
-            draw_context,
-            cgmath::Matrix4::from_translation(cgmath::Vector3::new(0.5, 0.0, 0.0)),
-        );
+        cube_left
+            .borrow_mut()
+            .set_transform(cgmath::Matrix4::from_translation(cgmath::Vector3::new(
+                -0.5, 0.0, 5.0,
+            )));
+        cube_right
+            .borrow_mut()
+            .set_transform(cgmath::Matrix4::from_translation(cgmath::Vector3::new(
+                0.5, 0.0, 0.0,
+            )));
         scene.add(cube_left.clone());
         scene.add(cube_right.clone());
 
@@ -101,13 +103,11 @@ impl Scenario for MainScenario {
     fn on_update(&mut self, update_context: &wgpu_lite_wrapper::scenario::UpdateContext) {
         let delta_rotation =
             ROTATION_DEG_PER_S * update_context.update_interval.update_delta.as_secs_f32();
-        self.cube_left.borrow_mut().apply_transform(
-            update_context.draw_context,
-            cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation)),
-        );
-        self.cube_right.borrow_mut().apply_transform(
-            update_context.draw_context,
-            cgmath::Matrix4::from_angle_y(cgmath::Deg(delta_rotation)),
-        );
+        self.cube_left
+            .borrow_mut()
+            .apply_transform(cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation)));
+        self.cube_right
+            .borrow_mut()
+            .apply_transform(cgmath::Matrix4::from_angle_y(cgmath::Deg(delta_rotation)));
     }
 }

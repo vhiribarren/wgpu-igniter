@@ -25,6 +25,7 @@ SOFTWARE.
 use std::array;
 use std::collections::{BTreeMap, HashSet};
 use std::marker::PhantomData;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use crate::scenario::WinitEventLoopHandler;
@@ -120,6 +121,7 @@ impl UnitformType for [[f32; 3]; 3] {
 pub struct Uniform<T> {
     value: T,
     buffer: wgpu::Buffer,
+    queue: Rc<wgpu::Queue>,
 }
 
 impl<T: UnitformType> Uniform<T> {
@@ -131,7 +133,12 @@ impl<T: UnitformType> Uniform<T> {
                 contents: bytemuck::cast_slice(&[value.apply_alignment()]),
                 usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::UNIFORM,
             });
-        Self { value, buffer }
+        let queue = Rc::clone(&context.queue);
+        Self {
+            value,
+            buffer,
+            queue,
+        }
     }
     pub fn binding_resource(&self) -> wgpu::BindingResource {
         self.buffer.as_entire_binding()
@@ -139,9 +146,9 @@ impl<T: UnitformType> Uniform<T> {
     pub fn read_uniform(&self) -> &T {
         &self.value
     }
-    pub fn write_uniform(&mut self, context: &DrawContext, data: T) {
+    pub fn write_uniform(&mut self, data: T) {
         self.value = data;
-        context.queue.write_buffer(
+        self.queue.write_buffer(
             &self.buffer,
             0 as wgpu::BufferAddress,
             bytemuck::cast_slice(&[self.value.apply_alignment()]),
@@ -171,6 +178,7 @@ pub struct StorageBuffer<T: StorageBufferType> {
     pub(crate) count: usize,
     pub(crate) remote_buffer: Arc<wgpu::Buffer>,
     pub local_buffer: Vec<T::AlignedType>, // FIXME Should I avoid it being public?
+    queue: Rc<wgpu::Queue>,
 }
 
 impl<T: StorageBufferType> StorageBuffer<T> {
@@ -180,6 +188,7 @@ impl<T: StorageBufferType> StorageBuffer<T> {
             .map(StorageBufferType::apply_alignment)
             .collect();
         Self {
+            queue: Rc::clone(&context.queue),
             count: data_init.len(),
             remote_buffer: Arc::new(context.device.create_buffer_init(&BufferInitDescriptor {
                 label: Some("Storage Buffer"),
@@ -193,19 +202,16 @@ impl<T: StorageBufferType> StorageBuffer<T> {
     pub fn binding_resource(&self) -> wgpu::BindingResource {
         self.remote_buffer.as_entire_binding()
     }
-    pub fn start_write<'a>(
-        &'a mut self,
-        context: &'a DrawContext,
-    ) -> StorageBufferWriteGuard<'a, T> {
+    pub fn start_write(&mut self) -> StorageBufferWriteGuard<'_, T> {
         StorageBufferWriteGuard {
-            context,
+            queue: Rc::clone(&self.queue),
             storage_buffer: self,
         }
     }
 }
 
 pub struct StorageBufferWriteGuard<'a, T: StorageBufferType> {
-    context: &'a DrawContext,
+    queue: Rc<wgpu::Queue>,
     pub storage_buffer: &'a mut StorageBuffer<T>, // FIXME Should I avoid it being public?
 }
 
@@ -227,7 +233,7 @@ impl<T: StorageBufferType> StorageBufferWriteGuard<'_, T> {
 
 impl<T: StorageBufferType> Drop for StorageBufferWriteGuard<'_, T> {
     fn drop(&mut self) {
-        self.context.queue.write_buffer(
+        self.queue.write_buffer(
             &self.storage_buffer.remote_buffer,
             0 as wgpu::BufferAddress,
             bytemuck::cast_slice(&self.storage_buffer.local_buffer),
@@ -698,7 +704,7 @@ pub struct DrawContext {
     surface: wgpu::Surface<'static>,
     pub multisample_config: MultiSampleConfig,
     pub depth_texture: wgpu::Texture,
-    pub queue: wgpu::Queue,
+    pub queue: Rc<wgpu::Queue>,
     pub device: wgpu::Device,
     pub surface_config: wgpu::SurfaceConfiguration,
 }
@@ -781,7 +787,7 @@ impl DrawContext {
             _adapter: adapter,
             surface,
             device,
-            queue,
+            queue: Rc::new(queue),
             surface_config,
             depth_texture,
         })

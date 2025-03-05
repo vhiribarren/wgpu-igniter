@@ -243,7 +243,6 @@ impl ApplicationHandler<App> for AppHandlerState {
                     app.last_fps_instant = app.last_draw_instant;
                 };
                 app.scenario.on_update(&UpdateContext {
-                    draw_context: &app.draw_context,
                     update_interval: &UpdateInterval {
                         scenario_start: app.scenario_start,
                         update_delta,

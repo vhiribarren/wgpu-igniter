@@ -36,7 +36,6 @@ pub struct UpdateInterval {
 }
 
 pub struct UpdateContext<'a> {
-    pub draw_context: &'a DrawContext,
     pub update_interval: &'a UpdateInterval,
 }
 

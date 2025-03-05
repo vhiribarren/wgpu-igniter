@@ -106,10 +106,10 @@ impl Scenario for MainScenario {
             * cgmath::Matrix4::from_angle_y(cgmath::Deg(delta_rotation));
         self.cube_interpolated
             .borrow_mut()
-            .apply_transform(draw_context, transform);
+            .apply_transform(transform);
         {
             let mut cube_flat = self.cube_flat.borrow_mut();
-            cube_flat.apply_transform(draw_context, transform);
+            cube_flat.apply_transform(transform);
             cube_flat.set_opacity(
                 0.5 + f32::sin(
                     2. * update_interval.scenario_start.elapsed().as_secs_f32()

@@ -73,8 +73,6 @@ impl Scenario for MainScenario {
         let delta_rotation = ROTATION_DEG_PER_S * update_interval.update_delta.as_secs_f32();
         let transform = cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation))
             * cgmath::Matrix4::from_angle_y(cgmath::Deg(delta_rotation));
-        self.cube
-            .borrow_mut()
-            .apply_transform(draw_context, transform);
+        self.cube.borrow_mut().apply_transform(transform);
     }
 }

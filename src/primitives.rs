@@ -55,9 +55,9 @@ pub trait Shareable: Sized {
 }
 
 pub trait Transforms {
-    fn set_transform(&mut self, context: &DrawContext, transform: Matrix4<f32>);
+    fn set_transform(&mut self, transform: Matrix4<f32>);
     fn get_transform(&self) -> &Matrix4<f32>;
-    fn apply_transform(&mut self, context: &DrawContext, transform: Matrix4<f32>);
+    fn apply_transform(&mut self, transform: Matrix4<f32>);
 }
 
 pub struct Object3DUniforms {
@@ -81,13 +81,13 @@ impl Object3D {
             uniforms,
         }
     }
-    fn update_normal_mat(&mut self, context: &DrawContext) {
+    fn update_normal_mat(&mut self) {
         let Some(normal_tranform) = &mut self.uniforms.normals else {
             return;
         };
         let rotation_mat = extract_rotation(self.transform);
         let normal_mat = rotation_mat.invert().unwrap().transpose();
-        normal_tranform.write_uniform(context, normal_mat.into());
+        normal_tranform.write_uniform(normal_mat.into());
     }
     pub fn set_opacity(&mut self, value: f32) {
         self.opacity = value.clamp(0., 1.);
@@ -99,22 +99,18 @@ impl Object3D {
 }
 
 impl Transforms for Object3D {
-    fn set_transform(&mut self, context: &DrawContext, transform: Matrix4<f32>) {
+    fn set_transform(&mut self, transform: Matrix4<f32>) {
         self.transform = transform;
-        self.uniforms
-            .view
-            .write_uniform(context, self.transform.into());
-        self.update_normal_mat(context);
+        self.uniforms.view.write_uniform(self.transform.into());
+        self.update_normal_mat();
     }
     fn get_transform(&self) -> &Matrix4<f32> {
         &self.transform
     }
-    fn apply_transform(&mut self, context: &DrawContext, transform: Matrix4<f32>) {
+    fn apply_transform(&mut self, transform: Matrix4<f32>) {
         self.transform = transform * self.transform;
-        self.uniforms
-            .view
-            .write_uniform(context, self.transform.into());
-        self.update_normal_mat(context);
+        self.uniforms.view.write_uniform(self.transform.into());
+        self.update_normal_mat();
     }
 }
 
@@ -140,13 +136,13 @@ impl Object3DInstanceGroupHandlers {
             normal_mats: StorageBuffer::new_array(context, &vec![[[0.; 3]; 3]; count as usize]),
         }
     }
-    pub fn update_instances<F>(&mut self, context: &DrawContext, f: F)
+    pub fn update_instances<F>(&mut self, f: F)
     where
         F: Fn(usize, &mut Object3DInstance) + 'static + Send + Sync,
     {
-        let transforms_writer = self.transforms.start_write(context);
+        let transforms_writer = self.transforms.start_write();
         let transforms_iter = transforms_writer.storage_buffer.local_buffer.par_iter_mut();
-        let normal_mats_writer = self.normal_mats.start_write(context);
+        let normal_mats_writer = self.normal_mats.start_write();
         let normals_iter = normal_mats_writer
             .storage_buffer
             .local_buffer
@@ -220,11 +216,11 @@ impl Object3DInstanceGroup {
             handlers,
         }
     }
-    pub fn update_instances<F>(&mut self, context: &DrawContext, f: F)
+    pub fn update_instances<F>(&mut self, f: F)
     where
         F: Fn(usize, &mut Object3DInstance) + 'static + Send + Sync,
     {
-        self.handlers.update_instances(context, f);
+        self.handlers.update_instances(f);
     }
     pub fn set_opacity(&mut self, value: f32) {
         self.opacity = value.clamp(0., 1.);

@@ -84,6 +84,6 @@ impl Scenario for MainScenario {
             cgmath::Matrix4::from_angle_z(cgmath::Deg(new_rotation));
         self.cube
             .borrow_mut()
-            .set_transform(context.draw_context, transform * z_translation);
+            .set_transform(transform * z_translation);
     }
 }

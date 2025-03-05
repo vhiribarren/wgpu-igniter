@@ -67,10 +67,10 @@ impl Scene3D {
     pub fn scene_uniforms(&self) -> &Scene3DUniforms {
         &self.scene_uniforms
     }
-    pub fn update(&mut self, context: &UpdateContext, camera_matrix: Matrix4<f32>) {
+    pub fn update(&mut self, _context: &UpdateContext, camera_matrix: Matrix4<f32>) {
         self.scene_uniforms
             .camera_uniform
-            .write_uniform(context.draw_context, camera_matrix.into());
+            .write_uniform(camera_matrix.into());
     }
 }
 

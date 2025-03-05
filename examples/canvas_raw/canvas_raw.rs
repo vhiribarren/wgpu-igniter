@@ -55,14 +55,9 @@ impl MainScenario {
 
 impl WinitEventLoopHandler for MainScenario {
     fn on_update(&mut self, update_context: &UpdateContext) {
-        let &UpdateContext {
-            draw_context,
-            update_interval,
-        } = update_context;
-        self.time_uniform.write_uniform(
-            draw_context,
-            update_interval.scenario_start.elapsed().as_secs_f32(),
-        );
+        let &UpdateContext { update_interval } = update_context;
+        self.time_uniform
+            .write_uniform(update_interval.scenario_start.elapsed().as_secs_f32());
     }
     fn on_render<'drawable>(&'drawable self, render_pass: &mut wgpu::RenderPass<'drawable>) {
         self.canvas.render(render_pass);

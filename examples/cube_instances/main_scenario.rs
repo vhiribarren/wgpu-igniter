@@ -72,7 +72,7 @@ impl MainScenario {
                 CubeOptions::default(),
             )
             .unwrap();
-            cube_init.update_instances(draw_context, |idx, instance| {
+            cube_init.update_instances(|idx, instance| {
                 let x = (idx % CUBE_WIDTH_COUNT) as f32;
                 let z = (idx / CUBE_WIDTH_COUNT) as f32;
                 instance.set_translation(cgmath::Vector3::new(
@@ -103,14 +103,11 @@ impl Scenario for MainScenario {
 
     #[allow(clippy::cast_precision_loss)]
     fn on_update(&mut self, update_context: &UpdateContext) {
-        let &UpdateContext {
-            draw_context,
-            update_interval,
-        } = update_context;
+        let &UpdateContext { update_interval } = update_context;
         let delta = update_interval.update_delta.as_secs_f32();
         self.cube
             .borrow_mut()
-            .update_instances(draw_context, move |index, instance| {
+            .update_instances(move |index, instance| {
                 let rotation = cgmath::Quaternion::from_axis_angle(
                     cgmath::Vector3::new((index as f32).cos(), (index as f32).sin(), 0.),
                     cgmath::Deg(50. * delta),
