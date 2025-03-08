@@ -698,10 +698,40 @@ impl DeviceLocalExt for wgpu::Device {
     }
 }
 
+enum DrawTarget {
+    Texture(wgpu::Texture),
+    Surface(wgpu::Surface<'static>),
+}
+
+impl DrawTarget {
+    fn configure(&mut self, device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) {
+        match self {
+            DrawTarget::Texture(texture) => {
+                *texture = device.create_texture(&wgpu::TextureDescriptor {
+                    label: Some("Draw Target Texture"),
+                    size: wgpu::Extent3d {
+                        width: surface_config.width,
+                        height: surface_config.height,
+                        depth_or_array_layers: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count: 1,
+                    dimension: wgpu::TextureDimension::D2,
+                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                    usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                    view_formats: &[wgpu::TextureFormat::Rgba8UnormSrgb],
+                });
+            }
+            DrawTarget::Surface(surface) => {
+                surface.configure(device, surface_config);
+            }
+        }
+    }
+}
+
 pub struct DrawContext {
-    _adapter: wgpu::Adapter,
     multisample_texture: Option<wgpu::Texture>,
-    surface: wgpu::Surface<'static>,
+    draw_target: DrawTarget,
     pub multisample_config: MultiSampleConfig,
     pub depth_texture: wgpu::Texture,
     pub queue: Rc<wgpu::Queue>,
@@ -710,18 +740,23 @@ pub struct DrawContext {
 }
 
 impl DrawContext {
+    const DEFAULT_WIDTH: u32 = 500;
+    const DEFAULT_HEIGHT: u32 = 500;
     const DEFAULT_MULTISAMPLE_ENABLED: bool = true;
     const DEFAULT_MULTISAMPLE_COUNT: u32 = 4;
     pub const BIND_GROUP_INDEX_CAMERA: u32 = 0;
 
     // FIXME winit window has size of 0 at startup for web browser, so also passing dimensions to draw context
     pub async fn new(
-        window: Arc<Window>,
+        window: Option<Arc<Window>>,
         dimensions: Option<Dimensions>,
     ) -> anyhow::Result<DrawContext> {
-        let (width, height) = match dimensions {
-            Some(d) => (d.width, d.height),
-            None => (window.inner_size().width, window.inner_size().height),
+        let (width, height) = if let Some(d) = dimensions {
+            (d.width, d.height)
+        } else if let Some(w) = &window {
+            (w.inner_size().width, w.inner_size().height)
+        } else {
+            (Self::DEFAULT_WIDTH, Self::DEFAULT_HEIGHT)
         };
         let multisample_config = MultiSampleConfig {
             multisample_enabled: Self::DEFAULT_MULTISAMPLE_ENABLED,
@@ -731,12 +766,12 @@ impl DrawContext {
             backends: wgpu::Backends::all(),
             ..Default::default()
         });
-        let surface = instance.create_surface(Arc::clone(&window)).unwrap();
+        let surface = window.map(|w| instance.create_surface(Arc::clone(&w)).unwrap());
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: Default::default(),
                 force_fallback_adapter: false,
-                compatible_surface: Some(&surface),
+                compatible_surface: surface.as_ref(),
             })
             .await
             .ok_or_else(|| anyhow!("Could not create WebGPU adapter"))?;
@@ -759,13 +794,35 @@ impl DrawContext {
             )
             .await
             .unwrap();
-        let surface_caps = surface.get_capabilities(&adapter);
-        let surface_format = surface_caps
-            .formats
-            .iter()
-            .find(|f| f.is_srgb())
-            .copied()
-            .unwrap_or(surface_caps.formats[0]);
+        let mut draw_target = if let Some(surface) = surface {
+            DrawTarget::Surface(surface)
+        } else {
+            DrawTarget::Texture(device.create_texture(&wgpu::TextureDescriptor {
+                label: Some("Draw Target Texture"),
+                size: wgpu::Extent3d {
+                    width,
+                    height,
+                    depth_or_array_layers: 1,
+                },
+                mip_level_count: 1,
+                sample_count: multisample_config.get_multisample_count(),
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
+                view_formats: &[wgpu::TextureFormat::Rgba8UnormSrgb],
+            }))
+        };
+        let surface_format = if let DrawTarget::Surface(s) = &draw_target {
+            let surface_caps = s.get_capabilities(&adapter);
+            surface_caps
+                .formats
+                .iter()
+                .find(|f| f.is_srgb())
+                .copied()
+                .unwrap_or(surface_caps.formats[0])
+        } else {
+            wgpu::TextureFormat::Rgba8UnormSrgb
+        };
         let surface_config = wgpu::SurfaceConfiguration {
             desired_maximum_frame_latency: 2,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -776,7 +833,7 @@ impl DrawContext {
             alpha_mode: wgpu::CompositeAlphaMode::Auto,
             present_mode: wgpu::PresentMode::Fifo,
         };
-        surface.configure(&device, &surface_config);
+        draw_target.configure(&device, &surface_config);
         let depth_texture = device.create_depth_texture(&surface_config, &multisample_config);
         let multisample_texture =
             device.create_multisample_texture(&surface_config, &multisample_config);
@@ -784,8 +841,7 @@ impl DrawContext {
         Ok(DrawContext {
             multisample_config,
             multisample_texture,
-            _adapter: adapter,
-            surface,
+            draw_target,
             device,
             queue: Rc::new(queue),
             surface_config,
@@ -804,7 +860,8 @@ impl DrawContext {
     pub fn resize(&mut self, width: u32, height: u32) {
         self.surface_config.width = width;
         self.surface_config.height = height;
-        self.surface.configure(&self.device, &self.surface_config);
+        self.draw_target
+            .configure(&self.device, &self.surface_config);
         self.depth_texture = self
             .device
             .create_depth_texture(&self.surface_config, &self.multisample_config);
@@ -817,10 +874,22 @@ impl DrawContext {
         let depth_texture_view = self
             .depth_texture
             .create_view(&wgpu::TextureViewDescriptor::default());
-        let displayed_texture = self.surface.get_current_texture()?;
-        let displayed_view = displayed_texture
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
+
+        let surface_texture = if let DrawTarget::Surface(surface) = &self.draw_target {
+            Some(surface.get_current_texture()?)
+        } else {
+            None
+        };
+        let displayed_view = match &self.draw_target {
+            DrawTarget::Texture(texture) => {
+                texture.create_view(&wgpu::TextureViewDescriptor::default())
+            }
+            DrawTarget::Surface(_) => surface_texture
+                .as_ref()
+                .unwrap()
+                .texture
+                .create_view(&wgpu::TextureViewDescriptor::default()),
+        };
         let (pass_view, pass_resolve_target) = if self.multisample_config.is_multisample_enabled() {
             let multisample_texture = self
                 .multisample_texture
@@ -867,7 +936,9 @@ impl DrawContext {
         drop(render_pass);
         let command_buffers = std::iter::once(encoder.finish());
         self.queue.submit(command_buffers);
-        displayed_texture.present();
+        if let Some(s) = surface_texture {
+            s.present();
+        };
         Ok(())
     }
 }

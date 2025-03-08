@@ -114,7 +114,7 @@ impl App {
         let last_draw_instant = scenario_start;
         let last_fps_instant = scenario_start;
         let draw_period_target = Duration::from_secs_f64(1.0 / TARGET_DRAW_FPS);
-        let draw_context = draw_context::DrawContext::new(Arc::clone(&window), dimensions)
+        let draw_context = draw_context::DrawContext::new(Some(Arc::clone(&window)), dimensions)
             .await
             .unwrap();
         let scenario = builder(&draw_context);
@@ -293,7 +293,7 @@ impl ApplicationHandler<App> for AppHandlerState {
     }
 }
 
-pub fn init_event_loop(builder: Box<WinitEventLoopBuilder>) {
+pub(crate) fn init_event_loop(builder: Box<WinitEventLoopBuilder>) {
     let event_loop = EventLoop::with_user_event().build().unwrap();
     event_loop.set_control_flow(ControlFlow::Poll);
     let app_handler_state = &mut AppHandlerState::new(&event_loop, builder);

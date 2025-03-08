@@ -23,10 +23,16 @@ SOFTWARE.
 */
 
 use log::info;
+use std::env;
 
-use crate::{draw_context::DrawContext, scenario::WinitEventLoopHandler, window::init_event_loop};
+use crate::{
+    draw_context::DrawContext,
+    scenario::{WinitEventLoopBuilder, WinitEventLoopHandler},
+    window::init_event_loop,
+};
 
 const GLOBAL_LOG_FILTER: log::LevelFilter = log::LevelFilter::Info;
+const ENV_HEADLESS: &str = "HEADLESS";
 
 pub fn launch_app<F>(builder: F)
 where
@@ -34,7 +40,13 @@ where
 {
     init_log();
     info!("Init app");
-    init_event_loop(Box::new(builder));
+    let is_headless = env::var(ENV_HEADLESS).is_ok();
+    if is_headless {
+        info!("Running in headless mode");
+        init_headless(Box::new(builder));
+    } else {
+        init_event_loop(Box::new(builder));
+    }
 }
 
 fn init_log() {
@@ -70,4 +82,17 @@ fn init_log() {
         })
         .apply()
         .unwrap();
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn init_headless(builder: Box<WinitEventLoopBuilder>) {
+    use pollster::FutureExt;
+    let context = DrawContext::new(None, None).block_on().unwrap();
+    let scene_handler = builder(&context);
+    context.render_scene(scene_handler.as_ref()).unwrap();
+}
+
+#[cfg(target_arch = "wasm32")]
+fn init_headless(builder: Box<WinitEventLoopBuilder>) {
+    todo!("Headless mode is not supported in WASM");
 }
