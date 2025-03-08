@@ -76,7 +76,7 @@ pub struct ScenarioScheduler {
     scenario: Box<dyn Scenario>,
 }
 
-pub type WinitEventLoopBuilder = dyn Fn(&DrawContext) -> Box<dyn WinitEventLoopHandler>;
+pub type WinitEventLoopBuilder = dyn Fn(&mut DrawContext) -> Box<dyn WinitEventLoopHandler>;
 
 impl ScenarioScheduler {
     pub fn run(scenario: impl Scenario + 'static) -> Box<dyn WinitEventLoopHandler> {

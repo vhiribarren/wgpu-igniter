@@ -710,7 +710,8 @@ impl DrawTarget {
     fn configure(&mut self, device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) {
         match self {
             DrawTarget::Texture(texture) => {
-                *texture = Self::create_texture(device, surface_config.width, surface_config.height);
+                *texture =
+                    Self::create_texture(device, surface_config.width, surface_config.height);
             }
             DrawTarget::Surface(surface) => {
                 surface.configure(device, surface_config);
@@ -738,6 +739,7 @@ impl DrawTarget {
 pub struct DrawContext {
     multisample_texture: Option<wgpu::Texture>,
     draw_target: DrawTarget,
+    clear_color: wgpu::Color,
     pub multisample_config: MultiSampleConfig,
     pub depth_texture: wgpu::Texture,
     pub queue: Rc<wgpu::Queue>,
@@ -750,6 +752,12 @@ impl DrawContext {
     const DEFAULT_HEIGHT: u32 = 500;
     const DEFAULT_MULTISAMPLE_ENABLED: bool = true;
     const DEFAULT_MULTISAMPLE_COUNT: u32 = 4;
+    const DEFAULT_CLEAR_COLOR: wgpu::Color = wgpu::Color {
+        r: 0.0,
+        g: 0.5,
+        b: 0.5,
+        a: 1.0,
+    };
     pub const BIND_GROUP_INDEX_CAMERA: u32 = 0;
 
     // FIXME winit window has size of 0 at startup for web browser, so also passing dimensions to draw context
@@ -839,7 +847,12 @@ impl DrawContext {
             queue: Rc::new(queue),
             surface_config,
             depth_texture,
+            clear_color: Self::DEFAULT_CLEAR_COLOR,
         })
+    }
+
+    pub fn set_clear_color(&mut self, color: wgpu::Color) {
+        self.clear_color = color;
     }
 
     pub fn create_shader_module(&self, wgsl_shader: &str) -> wgpu::ShaderModule {
@@ -907,12 +920,7 @@ impl DrawContext {
                 view: &pass_view,
                 resolve_target: pass_resolve_target,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color {
-                        r: 0.0,
-                        g: 0.5,
-                        b: 0.5,
-                        a: 1.0,
-                    }),
+                    load: wgpu::LoadOp::Clear(self.clear_color),
                     store: wgpu::StoreOp::Store,
                 },
             })],

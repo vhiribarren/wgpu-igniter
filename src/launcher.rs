@@ -36,7 +36,7 @@ const ENV_HEADLESS: &str = "HEADLESS";
 
 pub fn launch_app<F>(builder: F)
 where
-    F: Fn(&DrawContext) -> Box<dyn WinitEventLoopHandler> + 'static,
+    F: Fn(&mut DrawContext) -> Box<dyn WinitEventLoopHandler> + 'static,
 {
     init_log();
     info!("Init app");
@@ -87,8 +87,8 @@ fn init_log() {
 #[cfg(not(target_arch = "wasm32"))]
 fn init_headless(builder: Box<WinitEventLoopBuilder>) {
     use pollster::FutureExt;
-    let context = DrawContext::new(None, None).block_on().unwrap();
-    let scene_handler = builder(&context);
+    let context = &mut DrawContext::new(None, None).block_on().unwrap();
+    let scene_handler = builder(context);
     context.render_scene(scene_handler.as_ref()).unwrap();
 }
 

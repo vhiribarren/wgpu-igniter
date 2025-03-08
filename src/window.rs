@@ -114,10 +114,11 @@ impl App {
         let last_draw_instant = scenario_start;
         let last_fps_instant = scenario_start;
         let draw_period_target = Duration::from_secs_f64(1.0 / TARGET_DRAW_FPS);
-        let draw_context = draw_context::DrawContext::new(Some(Arc::clone(&window)), dimensions)
-            .await
-            .unwrap();
-        let scenario = builder(&draw_context);
+        let mut draw_context =
+            draw_context::DrawContext::new(Some(Arc::clone(&window)), dimensions)
+                .await
+                .unwrap();
+        let scenario = builder(&mut draw_context);
         Self {
             window,
             mouse_state,
