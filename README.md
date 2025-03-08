@@ -17,6 +17,17 @@ There are also some examples in the `examples` directory:
 
     cargo run --example cube_shader_transition
 
+In order to check if the launcher panics at simple executions, a headless mode
+exists used by tests. It can be enabled by using the `HEADLESS` environment
+variable:
+
+    HEADLESS=true cargo run
+
+To test the main app and all examples compile and run without an immediate
+crash:
+
+    cargo test
+
 ## WASM version
 
 For the web version, you must be sure you can compile to the WebAssembly target first:
