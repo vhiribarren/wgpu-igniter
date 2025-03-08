@@ -704,28 +704,34 @@ enum DrawTarget {
 }
 
 impl DrawTarget {
+    fn new_texture_target(device: &wgpu::Device, width: u32, height: u32) -> Self {
+        DrawTarget::Texture(Self::create_texture(device, width, height))
+    }
     fn configure(&mut self, device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) {
         match self {
             DrawTarget::Texture(texture) => {
-                *texture = device.create_texture(&wgpu::TextureDescriptor {
-                    label: Some("Draw Target Texture"),
-                    size: wgpu::Extent3d {
-                        width: surface_config.width,
-                        height: surface_config.height,
-                        depth_or_array_layers: 1,
-                    },
-                    mip_level_count: 1,
-                    sample_count: 1,
-                    dimension: wgpu::TextureDimension::D2,
-                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                    usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
-                    view_formats: &[wgpu::TextureFormat::Rgba8UnormSrgb],
-                });
+                *texture = Self::create_texture(device, surface_config.width, surface_config.height);
             }
             DrawTarget::Surface(surface) => {
                 surface.configure(device, surface_config);
             }
         }
+    }
+    fn create_texture(device: &wgpu::Device, width: u32, height: u32) -> wgpu::Texture {
+        device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Draw Target Texture"),
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
+            view_formats: &[wgpu::TextureFormat::Rgba8UnormSrgb],
+        })
     }
 }
 
@@ -797,20 +803,7 @@ impl DrawContext {
         let mut draw_target = if let Some(surface) = surface {
             DrawTarget::Surface(surface)
         } else {
-            DrawTarget::Texture(device.create_texture(&wgpu::TextureDescriptor {
-                label: Some("Draw Target Texture"),
-                size: wgpu::Extent3d {
-                    width,
-                    height,
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: multisample_config.get_multisample_count(),
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                usage: wgpu::TextureUsages::COPY_SRC | wgpu::TextureUsages::RENDER_ATTACHMENT,
-                view_formats: &[wgpu::TextureFormat::Rgba8UnormSrgb],
-            }))
+            DrawTarget::new_texture_target(&device, width, height)
         };
         let surface_format = if let DrawTarget::Surface(s) = &draw_target {
             let surface_caps = s.get_capabilities(&adapter);
