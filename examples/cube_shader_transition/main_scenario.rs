@@ -100,7 +100,6 @@ impl Scenario for MainScenario {
 
     fn on_update(&mut self, update_context: &UpdateContext) {
         let update_interval = update_context.update_interval;
-        let draw_context = update_context.draw_context;
         let delta_rotation = ROTATION_DEG_PER_S * update_interval.update_delta.as_secs_f32();
         let transform = cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation))
             * cgmath::Matrix4::from_angle_y(cgmath::Deg(delta_rotation));
