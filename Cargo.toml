@@ -33,5 +33,7 @@ web-sys =  { version = "0.3.76", features = [] }
 
 [dev-dependencies]
 assert_cmd = "2.0.16"
-cargo_metadata = "0.19.2"
 escargot = "0.5.13"
+
+[build-dependencies]
+cargo_metadata = "0.19.2"
