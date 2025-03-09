@@ -88,8 +88,8 @@ fn main() {
 
 fn generate_example_tests() {
     let test_file_path = Path::new(TEST_FILE_PATH);
-    let mut test_file =
-        File::create(&test_file_path).expect(format!("Failed to create {TEST_FILE_PATH}").as_str());
+    let mut test_file = File::create(test_file_path)
+        .unwrap_or_else(|_| panic!("Failed to create {TEST_FILE_PATH}"));
 
     writeln!(test_file, "{TEST_FILE_HEADER}").unwrap();
 
