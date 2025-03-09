@@ -739,7 +739,7 @@ impl DrawTarget {
 pub struct DrawContext {
     multisample_texture: Option<wgpu::Texture>,
     draw_target: DrawTarget,
-    clear_color: wgpu::Color,
+    clear_color: Option<wgpu::Color>,
     pub multisample_config: MultiSampleConfig,
     pub depth_texture: wgpu::Texture,
     pub queue: Rc<wgpu::Queue>,
@@ -847,11 +847,11 @@ impl DrawContext {
             queue: Rc::new(queue),
             surface_config,
             depth_texture,
-            clear_color: Self::DEFAULT_CLEAR_COLOR,
+            clear_color: Some(Self::DEFAULT_CLEAR_COLOR),
         })
     }
 
-    pub fn set_clear_color(&mut self, color: wgpu::Color) {
+    pub fn set_clear_color(&mut self, color: Option<wgpu::Color>) {
         self.clear_color = color;
     }
 
@@ -912,6 +912,10 @@ impl DrawContext {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Command Encoder"),
             });
+        let load_op = match self.clear_color {
+            Some(color) => wgpu::LoadOp::Clear(color),
+            None => wgpu::LoadOp::Load,
+        };
         let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render pass"),
             timestamp_writes: None,
@@ -920,7 +924,7 @@ impl DrawContext {
                 view: &pass_view,
                 resolve_target: pass_resolve_target,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(self.clear_color),
+                    load: load_op,
                     store: wgpu::StoreOp::Store,
                 },
             })],

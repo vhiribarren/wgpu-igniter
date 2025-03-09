@@ -49,7 +49,7 @@ impl MainScenario {
     #[allow(clippy::cast_possible_truncation)]
     #[allow(clippy::cast_precision_loss)]
     pub fn new(draw_context: &mut DrawContext) -> Self {
-        draw_context.set_clear_color(wgpu::Color::BLACK);
+        draw_context.set_clear_color(Some(wgpu::Color::BLACK));
         let camera = WinitCameraAdapter::new(
             PerspectiveConfig {
                 eye: cgmath::Point3 {
