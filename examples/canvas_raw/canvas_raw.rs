@@ -44,7 +44,9 @@ impl MainScenario {
             &shader_module,
             DrawModeParams::Direct { vertex_count: 3 },
         );
-        drawable_builder.add_uniform(0, 0, &time_uniform).unwrap();
+        drawable_builder
+            .add_uniform(0, 0, &time_uniform)
+            .expect("Bind group or binding should be different from other uniforms");
         let canvas = drawable_builder.build();
         Self {
             canvas,

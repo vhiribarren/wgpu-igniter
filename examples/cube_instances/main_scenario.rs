@@ -71,8 +71,7 @@ impl MainScenario {
                 scene.scene_uniforms(),
                 (CUBE_WIDTH_COUNT * CUBE_DEPTH_COUNT) as u32,
                 CubeOptions::default(),
-            )
-            .unwrap();
+            );
             cube_init.update_instances(|idx, instance| {
                 let x = (idx % CUBE_WIDTH_COUNT) as f32;
                 let z = (idx / CUBE_WIDTH_COUNT) as f32;

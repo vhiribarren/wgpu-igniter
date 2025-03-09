@@ -59,16 +59,16 @@ impl MainScenario {
                 TRIANGLE_GEOMETRY,
                 wgpu::VertexFormat::Float32x3,
             )
-            .unwrap()
+            .expect("Location should be different than for another attribute.")
             .add_attribute(
                 1,
                 wgpu::VertexStepMode::Vertex,
                 TRIANGLE_COLOR,
                 wgpu::VertexFormat::Float32x3,
             )
-            .unwrap()
+            .expect("Location should be different than for another attribute.")
             .add_uniform(0, 0, &transform_uniform)
-            .unwrap();
+            .expect("Bind group or binding should be different from other uniforms.");
         let triangle = drawable_builder.build();
         Self {
             triangle,

@@ -72,7 +72,6 @@ impl MainScenario {
             scene_uniforms,
             Default::default(),
         )
-        .unwrap()
         .into_shareable();
         let cube_flat = cube::create_cube_with_colors(
             draw_context,
@@ -81,7 +80,6 @@ impl MainScenario {
             scene_uniforms,
             CubeOptions { with_alpha: true },
         )
-        .unwrap()
         .into_shareable();
 
         scene.add(cube_interpolated.clone());

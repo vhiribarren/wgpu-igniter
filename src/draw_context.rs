@@ -806,8 +806,7 @@ impl DrawContext {
                 },
                 None,
             )
-            .await
-            .unwrap();
+            .await?;
         let mut draw_target = if let Some(surface) = surface {
             DrawTarget::Surface(surface)
         } else {
@@ -892,7 +891,7 @@ impl DrawContext {
             }
             DrawTarget::Surface(_) => surface_texture
                 .as_ref()
-                .unwrap()
+                .expect("When surface is used, this optional should not be empty")
                 .texture
                 .create_view(&wgpu::TextureViewDescriptor::default()),
         };

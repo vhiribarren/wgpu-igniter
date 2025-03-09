@@ -172,7 +172,7 @@ pub fn create_cube_with_colors(
     frg_module: &wgpu::ShaderModule,
     uniforms: &Scene3DUniforms,
     options: CubeOptions,
-) -> Result<Object3D, anyhow::Error> {
+) -> Object3D {
     let transform_uniform = Uniform::new(context, cgmath::Matrix4::identity().into());
 
     let mut drawable_builder = DrawableBuilder::new(
@@ -189,15 +189,19 @@ pub fn create_cube_with_colors(
             wgpu::VertexStepMode::Vertex,
             CUBE_GEOMETRY_COMPACT,
             wgpu::VertexFormat::Float32x3,
-        )?
+        )
+        .expect("Location should be different than for another attribute.")
         .add_attribute(
             1,
             wgpu::VertexStepMode::Vertex,
             CUBE_COLOR_COMPACT,
             wgpu::VertexFormat::Float32x3,
-        )?
-        .add_uniform(0, 0, &uniforms.camera_uniform)?
-        .add_uniform(1, 0, &transform_uniform)?;
+        )
+        .expect("Location should be different than for another attribute.")
+        .add_uniform(0, 0, &uniforms.camera_uniform)
+        .expect("Bind group or binding should be different from other uniforms.")
+        .add_uniform(1, 0, &transform_uniform)
+        .expect("Bind group or binding should be different from other uniforms.");
     if options.with_alpha {
         drawable_builder.set_blend_option(wgpu::BlendState {
             color: wgpu::BlendComponent {
@@ -209,13 +213,13 @@ pub fn create_cube_with_colors(
         });
     }
     let drawable = drawable_builder.build();
-    Ok(Object3D::new(
+    Object3D::new(
         drawable,
         Object3DUniforms {
             view: transform_uniform,
             normals: None,
         },
-    ))
+    )
 }
 
 pub fn create_cube_with_normals(
@@ -224,7 +228,7 @@ pub fn create_cube_with_normals(
     frg_module: &wgpu::ShaderModule,
     uniforms: &Scene3DUniforms,
     options: CubeOptions,
-) -> Result<Object3D, anyhow::Error> {
+) -> Object3D {
     let transform_uniform = Uniform::new(context, cgmath::Matrix4::identity().into());
     let normals_uniform = Uniform::new(context, cgmath::Matrix3::identity().into());
 
@@ -242,16 +246,21 @@ pub fn create_cube_with_normals(
             wgpu::VertexStepMode::Vertex,
             CUBE_GEOMETRY_DUPLICATES,
             wgpu::VertexFormat::Float32x3,
-        )?
+        )
+        .expect("Location should be different than for another attribute.")
         .add_attribute(
             1,
             wgpu::VertexStepMode::Vertex,
             &CUBE_NORMALS_DUPLICATES,
             wgpu::VertexFormat::Float32x3,
-        )?
-        .add_uniform(0, 0, &uniforms.camera_uniform)?
-        .add_uniform(1, 0, &transform_uniform)?
-        .add_uniform(1, 1, &normals_uniform)?;
+        )
+        .expect("Location should be different than for another attribute.")
+        .add_uniform(0, 0, &uniforms.camera_uniform)
+        .expect("Bind group or binding should be different from other uniforms.")
+        .add_uniform(1, 0, &transform_uniform)
+        .expect("Bind group or binding should be different from other uniforms.")
+        .add_uniform(1, 1, &normals_uniform)
+        .expect("Bind group or binding should be different from other uniforms.");
 
     if options.with_alpha {
         drawable_builder.set_blend_option(wgpu::BlendState {
@@ -264,13 +273,13 @@ pub fn create_cube_with_normals(
         });
     }
     let drawable = drawable_builder.build();
-    Ok(Object3D::new(
+    Object3D::new(
         drawable,
         Object3DUniforms {
             view: transform_uniform,
             normals: Some(normals_uniform),
         },
-    ))
+    )
 }
 
 pub fn create_cube_with_normals_instances(
@@ -280,7 +289,7 @@ pub fn create_cube_with_normals_instances(
     uniforms: &Scene3DUniforms,
     count: u32,
     options: CubeOptions,
-) -> Result<Object3DInstanceGroup, anyhow::Error> {
+) -> Object3DInstanceGroup {
     let handlers = Object3DInstanceGroupHandlers::new(context, count);
     let mut drawable_builder = DrawableBuilder::new(
         context,
@@ -297,16 +306,21 @@ pub fn create_cube_with_normals_instances(
             wgpu::VertexStepMode::Vertex,
             CUBE_GEOMETRY_DUPLICATES,
             wgpu::VertexFormat::Float32x3,
-        )?
+        )
+        .expect("Location should be different than for another attribute.")
         .add_attribute(
             1,
             wgpu::VertexStepMode::Vertex,
             &CUBE_NORMALS_DUPLICATES,
             wgpu::VertexFormat::Float32x3,
-        )?
-        .add_uniform(0, 0, &uniforms.camera_uniform)?
-        .add_storage_buffer(1, 0, &handlers.transforms)?
-        .add_storage_buffer(1, 1, &handlers.normal_mats)?;
+        )
+        .expect("Location should be different than for another attribute.")
+        .add_uniform(0, 0, &uniforms.camera_uniform)
+        .expect("Bind group or binding should be different from other uniforms.")
+        .add_storage_buffer(1, 0, &handlers.transforms)
+        .expect("Bind group or binding should be different from other uniforms.")
+        .add_storage_buffer(1, 1, &handlers.normal_mats)
+        .expect("Bind group or binding should be different from other uniforms.");
 
     if options.with_alpha {
         drawable_builder.set_blend_option(wgpu::BlendState {
@@ -319,5 +333,5 @@ pub fn create_cube_with_normals_instances(
         });
     }
     let drawable = drawable_builder.build();
-    Ok(Object3DInstanceGroup::new(drawable, handlers))
+    Object3DInstanceGroup::new(drawable, handlers)
 }

@@ -86,7 +86,10 @@ impl Object3D {
             return;
         };
         let rotation_mat = extract_rotation(self.transform);
-        let normal_mat = rotation_mat.invert().unwrap().transpose();
+        let normal_mat = rotation_mat
+            .invert()
+            .expect("It should be possible to inverse the matrix")
+            .transpose();
         normal_tranform.write_uniform(normal_mat.into());
     }
     pub fn set_opacity(&mut self, value: f32) {

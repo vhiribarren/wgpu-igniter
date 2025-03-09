@@ -64,7 +64,6 @@ impl MainScenario {
             scene.scene_uniforms(),
             Default::default(),
         )
-        .unwrap()
         .into_shareable();
         let cube_right = cube::create_cube_with_colors(
             draw_context,
@@ -73,7 +72,6 @@ impl MainScenario {
             scene.scene_uniforms(),
             Default::default(),
         )
-        .unwrap()
         .into_shareable();
         cube_left
             .borrow_mut()

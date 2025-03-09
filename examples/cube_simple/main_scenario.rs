@@ -56,7 +56,6 @@ impl MainScenario {
             scene.scene_uniforms(),
             Default::default(),
         )
-        .unwrap()
         .into_shareable();
         scene.add(cube.clone());
         Self {
