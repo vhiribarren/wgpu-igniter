@@ -49,13 +49,17 @@ macro_rules! generate_test_case {
     };
 }
 
+#[rustfmt::skip]
 generate_test_case!(example_canvas_raw_doesnt_panic, "canvas_raw");
+#[rustfmt::skip]
 generate_test_case!(example_cube_instances_doesnt_panic, "cube_instances");
+#[rustfmt::skip]
 generate_test_case!(example_cube_normals_doesnt_panic, "cube_normals");
-generate_test_case!(
-    example_cube_shader_transition_doesnt_panic,
-    "cube_shader_transition"
-);
+#[rustfmt::skip]
+generate_test_case!(example_cube_shader_transition_doesnt_panic, "cube_shader_transition");
+#[rustfmt::skip]
 generate_test_case!(example_cube_simple_doesnt_panic, "cube_simple");
+#[rustfmt::skip]
 generate_test_case!(example_cube_two_doesnt_panic, "cube_two");
+#[rustfmt::skip]
 generate_test_case!(example_triangle_direct_doesnt_panic, "triangle_direct");
