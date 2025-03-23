@@ -776,7 +776,7 @@ impl DrawContext {
             multisample_enabled: Self::DEFAULT_MULTISAMPLE_ENABLED,
             multisample_count: Self::DEFAULT_MULTISAMPLE_COUNT,
         };
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::all(),
             ..Default::default()
         });
