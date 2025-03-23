@@ -134,11 +134,11 @@ impl WinitEventLoopHandler for ScenarioScheduler {
 
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
         self.scenario.camera_mut().update();
-        let camera_matrix = self.scenario.camera().get_camera_matrix();
-        self.scenario
-            .scene_mut()
-            .update(render_context, camera_matrix);
-        self.scenario.on_update(render_context);
+        // TODO Should I keep the clone, or regorganize the code?
+        let scenario = &*self.scenario;
+        let camera = scenario.camera().camera.clone();
+        let scene = self.scenario.scene_mut();
+        scene.update(render_context, &camera);
         let mut rpass = render_pass.forget_lifetime();
         let scenario = self.scenario.as_mut();
         scenario.scene().render(&mut rpass);

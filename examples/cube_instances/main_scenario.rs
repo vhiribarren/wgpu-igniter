@@ -50,17 +50,7 @@ impl MainScenario {
     #[allow(clippy::cast_precision_loss)]
     pub fn new(draw_context: &mut DrawContext) -> Self {
         draw_context.set_clear_color(Some(wgpu::Color::BLACK));
-        let camera = WinitCameraAdapter::new(
-            PerspectiveConfig {
-                eye: cgmath::Point3 {
-                    x: 0.0,
-                    y: 5.0,
-                    z: -15.0,
-                },
-                ..Default::default()
-            }
-            .into(),
-        );
+        let camera = WinitCameraAdapter::new(PerspectiveConfig::default().into());
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut scene = Scene3D::new(draw_context);
         let cube = {
@@ -112,7 +102,7 @@ impl Scenario for MainScenario {
             .update_instances(move |index, instance| {
                 let rotation = cgmath::Quaternion::from_axis_angle(
                     cgmath::Vector3::new((index as f32).cos(), (index as f32).sin(), 0.),
-                    cgmath::Deg(50. * delta),
+                    cgmath::Deg(10. * delta),
                 );
                 instance.apply_rotation(rotation);
             });

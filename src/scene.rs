@@ -24,9 +24,10 @@ SOFTWARE.
 
 use std::{cell::RefCell, rc::Rc};
 
-use cgmath::{Matrix4, SquareMatrix};
+use cgmath::{SquareMatrix, Zero};
 
 use crate::{
+    cameras::Camera,
     draw_context::{DrawContext, Drawable, Uniform},
     scenario::RenderContext,
 };
@@ -45,8 +46,14 @@ pub trait Scene {
 
 #[allow(clippy::manual_non_exhaustive)]
 pub struct Scene3DUniforms {
-    pub camera_uniform: Uniform<[[f32; 4]; 4]>,
+    pub camera_mat: Uniform<[[f32; 4]; 4]>,
+    pub camera_pos: Uniform<[f32; 3]>,
     _private: (),
+}
+
+pub struct CameraData {
+    pub matrix: cgmath::Matrix4<f32>,
+    pub position: cgmath::Point3<f32>,
 }
 
 pub struct Scene3D {
@@ -59,7 +66,8 @@ impl Scene3D {
         Scene3D {
             drawables: Vec::new(),
             scene_uniforms: Scene3DUniforms {
-                camera_uniform: Uniform::new(context, cgmath::Matrix4::identity().into()),
+                camera_mat: Uniform::new(context, cgmath::Matrix4::identity().into()),
+                camera_pos: Uniform::new(context, cgmath::Vector3::zero().into()),
                 _private: (),
             },
         }
@@ -67,10 +75,23 @@ impl Scene3D {
     pub fn scene_uniforms(&self) -> &Scene3DUniforms {
         &self.scene_uniforms
     }
-    pub fn update(&mut self, _context: &RenderContext, camera_matrix: Matrix4<f32>) {
+
+    pub fn update(&mut self, _context: &RenderContext, camera: &Camera) {
         self.scene_uniforms
-            .camera_uniform
-            .write_uniform(camera_matrix.into());
+            .camera_mat
+            .write_uniform(camera.get_camera_matrix().into());
+        self.scene_uniforms
+            .camera_pos
+            .write_uniform(camera.get_eye_position().into());
+    }
+
+    pub fn update_with_camera_data(&mut self, _context: &RenderContext, camera_data: CameraData) {
+        self.scene_uniforms
+            .camera_mat
+            .write_uniform(camera_data.matrix.into());
+        self.scene_uniforms
+            .camera_pos
+            .write_uniform(camera_data.position.into());
     }
 }
 

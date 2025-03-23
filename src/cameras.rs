@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use cgmath::{Matrix4, PerspectiveFov, Rad, Vector3, vec3};
+use cgmath::{EuclideanSpace, Matrix, Matrix4, PerspectiveFov, Rad, Vector3, vec3};
 use cgmath::{Ortho, Point3};
 use log::{debug, warn};
 use std::collections::BTreeSet;
@@ -139,7 +139,7 @@ impl From<PerspectiveConfig> for Camera {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Camera {
     pub projection: Matrix4<f32>,
     pub view: Matrix4<f32>,
@@ -149,6 +149,16 @@ impl Camera {
     #[must_use]
     pub fn get_camera_matrix(&self) -> Matrix4<f32> {
         (*TO_WEBGPU_NDCS) * self.projection * (*SWITCH_Z_AXIS) * self.view
+    }
+    pub fn get_eye_position(&self) -> Point3<f32> {
+        let view = self.view;
+        let rotation = cgmath::Matrix3::new(
+            view[0][0], view[0][1], view[0][2], view[1][0], view[1][1], view[1][2], view[2][0],
+            view[2][1], view[2][2],
+        );
+        let translation = Vector3::new(view[0][3], view[1][3], view[2][3]);
+        let camera_position = -rotation.transpose() * translation;
+        Point3::from_vec(camera_position)
     }
     pub fn move_z(&mut self, val: f32) {
         self.view = Matrix4::from_translation(Vector3::new(0., 0., -val)) * self.view;

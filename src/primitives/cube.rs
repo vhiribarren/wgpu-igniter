@@ -198,7 +198,7 @@ pub fn create_cube_with_colors(
             wgpu::VertexFormat::Float32x3,
         )
         .expect("Location should be different than for another attribute.")
-        .add_uniform(0, 0, &uniforms.camera_uniform)
+        .add_uniform(0, 0, &uniforms.camera_mat)
         .expect("Bind group or binding should be different from other uniforms.")
         .add_uniform(1, 0, &transform_uniform)
         .expect("Bind group or binding should be different from other uniforms.");
@@ -255,7 +255,9 @@ pub fn create_cube_with_normals(
             wgpu::VertexFormat::Float32x3,
         )
         .expect("Location should be different than for another attribute.")
-        .add_uniform(0, 0, &uniforms.camera_uniform)
+        .add_uniform(0, 0, &uniforms.camera_mat)
+        .expect("Bind group or binding should be different from other uniforms.")
+        .add_uniform(0, 1, &uniforms.camera_pos)
         .expect("Bind group or binding should be different from other uniforms.")
         .add_uniform(1, 0, &transform_uniform)
         .expect("Bind group or binding should be different from other uniforms.")
@@ -315,7 +317,9 @@ pub fn create_cube_with_normals_instances(
             wgpu::VertexFormat::Float32x3,
         )
         .expect("Location should be different than for another attribute.")
-        .add_uniform(0, 0, &uniforms.camera_uniform)
+        .add_uniform(0, 0, &uniforms.camera_mat)
+        .expect("Bind group or binding should be different from other uniforms.")
+        .add_uniform(0, 1, &uniforms.camera_pos)
         .expect("Bind group or binding should be different from other uniforms.")
         .add_storage_buffer(1, 0, &handlers.transforms)
         .expect("Bind group or binding should be different from other uniforms.")
