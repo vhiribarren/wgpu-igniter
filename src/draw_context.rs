@@ -740,6 +740,7 @@ pub struct DrawContext {
     multisample_texture: Option<wgpu::Texture>,
     draw_target: DrawTarget,
     clear_color: Option<wgpu::Color>,
+    pub window: Option<Arc<Window>>,
     pub multisample_config: MultiSampleConfig,
     pub depth_texture: wgpu::Texture,
     pub queue: Rc<wgpu::Queue>,
@@ -780,7 +781,9 @@ impl DrawContext {
             backends: wgpu::Backends::all(),
             ..Default::default()
         });
-        let surface = window.map(|w| instance.create_surface(Arc::clone(&w)).unwrap());
+        let surface = window
+            .as_ref()
+            .map(|w| instance.create_surface(Arc::clone(w)).unwrap());
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: Default::default(),
@@ -839,6 +842,7 @@ impl DrawContext {
             device.create_multisample_texture(&surface_config, &multisample_config);
 
         Ok(DrawContext {
+            window,
             multisample_config,
             multisample_texture,
             draw_target,
@@ -875,7 +879,7 @@ impl DrawContext {
             .create_multisample_texture(&self.surface_config, &self.multisample_config);
     }
 
-    pub fn render_scene(&self, scene: &dyn WinitEventLoopHandler) -> anyhow::Result<()> {
+    pub fn render_scene(&self, scene: &mut dyn WinitEventLoopHandler) -> anyhow::Result<()> {
         let depth_texture_view = self
             .depth_texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -915,7 +919,7 @@ impl DrawContext {
             Some(color) => wgpu::LoadOp::Clear(color),
             None => wgpu::LoadOp::Load,
         };
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+        let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render pass"),
             timestamp_writes: None,
             occlusion_query_set: None,
@@ -936,8 +940,7 @@ impl DrawContext {
                 stencil_ops: None,
             }),
         });
-        scene.on_render(&mut render_pass);
-        drop(render_pass);
+        scene.on_render(self, render_pass);
         let command_buffers = std::iter::once(encoder.finish());
         self.queue.submit(command_buffers);
         if let Some(s) = surface_texture {

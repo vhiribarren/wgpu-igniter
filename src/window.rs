@@ -201,6 +201,7 @@ impl ApplicationHandler<App> for AppHandlerState {
         let Some(ref mut app) = self.state else {
             return;
         };
+        app.scenario.on_window_event(&event);
         match event {
             WindowEvent::CloseRequested => {
                 debug!("Closing app");
@@ -250,7 +251,7 @@ impl ApplicationHandler<App> for AppHandlerState {
                     },
                 });
                 app.draw_context
-                    .render_scene(app.scenario.as_ref())
+                    .render_scene(app.scenario.as_mut())
                     .unwrap();
             }
             _ => {}

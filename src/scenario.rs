@@ -28,7 +28,7 @@ use crate::{
     scene::{Scene, Scene3D},
 };
 use web_time::{Duration, Instant};
-use winit::event::{DeviceEvent, KeyEvent};
+use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
 
 pub struct UpdateInterval {
     pub scenario_start: Instant,
@@ -42,8 +42,10 @@ pub struct UpdateContext<'a> {
 pub trait WinitEventLoopHandler {
     fn on_mouse_event(&mut self, _event: &DeviceEvent) {}
     fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
+    fn on_window_event(&mut self, _event: &WindowEvent) {}
+
     fn on_update(&mut self, _update_context: &UpdateContext) {}
-    fn on_render<'drawable>(&'drawable self, render_pass: &mut wgpu::RenderPass<'drawable>);
+    fn on_render<'a>(&'a mut self, _draw_context: &DrawContext, render_pass: wgpu::RenderPass<'a>);
 }
 
 pub trait Scenario {
@@ -95,6 +97,8 @@ impl WinitEventLoopHandler for ScenarioScheduler {
         self.scenario.camera_mut().keyboard_event_listener(event);
     }
 
+    fn on_window_event(&mut self, _event: &WindowEvent) {}
+
     fn on_update(&mut self, update_context: &UpdateContext) {
         self.scenario.camera_mut().update();
         let camera_matrix = self.scenario.camera().get_camera_matrix();
@@ -104,7 +108,7 @@ impl WinitEventLoopHandler for ScenarioScheduler {
         self.scenario.on_update(update_context);
     }
 
-    fn on_render<'drawable>(&'drawable self, render_pass: &mut wgpu::RenderPass<'drawable>) {
+    fn on_render<'a>(&'a mut self, _draw_context: &DrawContext, render_pass: wgpu::RenderPass<'a>) {
         self.scenario.scene().render(render_pass);
     }
 }
