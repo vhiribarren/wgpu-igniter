@@ -22,9 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-mod egui_integration;
+mod main_scenario;
 
-use egui_integration::MainScenario;
+use main_scenario::MainScenario;
 use wgpu_lite_wrapper::launcher::launch_app;
 
 fn main() {
