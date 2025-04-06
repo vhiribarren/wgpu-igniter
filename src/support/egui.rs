@@ -12,11 +12,12 @@ pub struct EguiSupport {
 }
 impl EguiSupport {
     const PIXELS_PER_POINT: f32 = 1.0;
-    pub fn new(draw_context: &DrawContext, window: Arc<Window>) -> Self {
+    pub fn new(draw_context: &DrawContext) -> Self {
+        let window = Arc::clone(draw_context.window.as_ref().unwrap());
         let egui_state = egui_winit::State::new(
             egui::Context::default(),
             egui::ViewportId::default(),
-            &window,
+            &Arc::clone(&window),
             Some(window.scale_factor() as f32),
             None,
             None,

@@ -58,7 +58,7 @@ pub struct MainScenario {
 impl MainScenario {
     pub fn new(draw_context: &DrawContext) -> Self {
         let window = Arc::clone(draw_context.window.as_ref().unwrap());
-        let egui_support = EguiSupport::new(draw_context, Arc::clone(&window));
+        let egui_support = EguiSupport::new(draw_context);
         let gui_state = GuiState::default();
         let time_uniform = Uniform::new(draw_context, 0f32);
         let shader_module = draw_context.create_shader_module(CANVAS_STATIC_SHADER);
