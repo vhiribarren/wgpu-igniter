@@ -89,8 +89,12 @@ impl WinitEventLoopHandler for MainScenario {
             * cgmath::Matrix4::from_angle_z(cgmath::Deg(new_rotation));
         self.transform_uniform.write_uniform(transform.into());
     }
-    fn on_render<'drawable>(&'drawable self, render_pass: &mut wgpu::RenderPass<'drawable>) {
-        self.triangle.render(render_pass);
+    fn on_render<'drawable>(
+        &mut self,
+        _draw_context: &DrawContext,
+        mut render_pass: wgpu::RenderPass<'drawable>,
+    ) {
+        self.triangle.render(&mut render_pass);
     }
 
     fn on_mouse_event(&mut self, _event: &winit::event::DeviceEvent) {}

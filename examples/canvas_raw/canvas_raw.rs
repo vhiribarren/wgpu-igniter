@@ -61,7 +61,11 @@ impl WinitEventLoopHandler for MainScenario {
         self.time_uniform
             .write_uniform(update_interval.scenario_start.elapsed().as_secs_f32());
     }
-    fn on_render<'drawable>(&'drawable self, render_pass: &mut wgpu::RenderPass<'drawable>) {
-        self.canvas.render(render_pass);
+    fn on_render<'a>(
+        &'a mut self,
+        _draw_context: &DrawContext,
+        mut render_pass: wgpu::RenderPass<'a>,
+    ) {
+        self.canvas.render(&mut render_pass);
     }
 }
