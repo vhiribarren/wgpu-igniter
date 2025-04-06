@@ -27,7 +27,7 @@ use std::sync::Arc;
 use wgpu_lite_wrapper::draw_context::{
     DrawContext, DrawModeParams, Drawable, DrawableBuilder, Uniform,
 };
-use wgpu_lite_wrapper::scenario::{UpdateContext, WinitEventLoopHandler};
+use wgpu_lite_wrapper::scenario::{RenderContext, WinitEventLoopHandler};
 use wgpu_lite_wrapper::support::egui::EguiSupport;
 use winit::window::Window;
 
@@ -97,14 +97,16 @@ impl WinitEventLoopHandler for MainScenario {
     fn on_window_event(&mut self, event: &winit::event::WindowEvent) {
         let _ = self.egui_support.on_window_event(&self.window, event);
     }
-    fn on_update(&mut self, update_context: &UpdateContext) {
-        let &UpdateContext { update_interval } = update_context;
+    fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
+        let &RenderContext {
+            render_interval: update_interval,
+            draw_context,
+        } = render_context;
         self.egui_support.pixels_per_point = self.gui_state.pixels_per_point;
         self.time_uniform.write_uniform(
             update_interval.scenario_start.elapsed().as_secs_f32() * self.gui_state.anim_speed,
         );
-    }
-    fn on_render(&mut self, draw_context: &DrawContext, render_pass: wgpu::RenderPass<'_>) {
+
         let mut rpass = render_pass.forget_lifetime();
         self.canvas.render(&mut rpass);
         self.egui_support

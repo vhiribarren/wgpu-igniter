@@ -31,7 +31,7 @@ use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
 use wgpu_lite_wrapper::primitives::cube::CubeOptions;
 use wgpu_lite_wrapper::primitives::{Object3DInstanceGroup, Shareable, cube};
-use wgpu_lite_wrapper::scenario::{Scenario, UpdateContext};
+use wgpu_lite_wrapper::scenario::{RenderContext, Scenario};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
 const DEFAULT_SHADER: &str = include_str!("cube_instances.wgsl");
@@ -102,9 +102,11 @@ impl Scenario for MainScenario {
     gen_camera_scene!(camera, scene);
 
     #[allow(clippy::cast_precision_loss)]
-    fn on_update(&mut self, update_context: &UpdateContext) {
-        let &UpdateContext { update_interval } = update_context;
-        let delta = update_interval.update_delta.as_secs_f32();
+    fn on_update(&mut self, render_context: &RenderContext) {
+        let &RenderContext {
+            render_interval, ..
+        } = render_context;
+        let delta = render_interval.processing_delta.as_secs_f32();
         self.cube
             .borrow_mut()
             .update_instances(move |index, instance| {

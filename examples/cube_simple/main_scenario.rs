@@ -28,7 +28,7 @@ use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
 use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::scenario::{Scenario, UpdateContext};
+use wgpu_lite_wrapper::scenario::{RenderContext, Scenario};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
 const DEFAULT_SHADER: &str = include_str!(concat!(
@@ -69,9 +69,9 @@ impl MainScenario {
 impl Scenario for MainScenario {
     gen_camera_scene!(camera, scene);
 
-    fn on_update(&mut self, context: &UpdateContext) {
+    fn on_update(&mut self, context: &RenderContext) {
         let total_seconds = context
-            .update_interval
+            .render_interval
             .scenario_start
             .elapsed()
             .as_secs_f32();

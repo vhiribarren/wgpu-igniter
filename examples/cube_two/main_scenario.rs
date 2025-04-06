@@ -98,9 +98,12 @@ impl MainScenario {
 impl Scenario for MainScenario {
     gen_camera_scene!(camera, scene);
 
-    fn on_update(&mut self, update_context: &wgpu_lite_wrapper::scenario::UpdateContext) {
-        let delta_rotation =
-            ROTATION_DEG_PER_S * update_context.update_interval.update_delta.as_secs_f32();
+    fn on_update(&mut self, update_context: &wgpu_lite_wrapper::scenario::RenderContext) {
+        let delta_rotation = ROTATION_DEG_PER_S
+            * update_context
+                .render_interval
+                .processing_delta
+                .as_secs_f32();
         self.cube_left
             .borrow_mut()
             .apply_transform(cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation)));

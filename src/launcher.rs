@@ -87,11 +87,17 @@ fn init_log() {
 #[cfg(not(target_arch = "wasm32"))]
 fn init_headless(builder: Box<WinitEventLoopBuilder>) {
     use pollster::FutureExt;
-    let context = &mut DrawContext::new(None, None).block_on().unwrap();
-    let mut scene_handler = builder(context);
+
+    use crate::scenario::RenderContext;
+    let draw_context = &mut DrawContext::new(None, None).block_on().unwrap();
+    let mut scene_handler = builder(draw_context);
     // NOTE I do not like this circular dependency on context
-    context
-        .render_scene(|pass| scene_handler.on_render(context, pass))
+    let render_context = RenderContext {
+        render_interval: &Default::default(),
+        draw_context,
+    };
+    draw_context
+        .render_scene(|pass| scene_handler.on_render(&render_context, pass))
         .unwrap();
 }
 

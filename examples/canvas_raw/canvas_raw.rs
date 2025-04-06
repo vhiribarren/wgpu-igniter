@@ -25,7 +25,7 @@ SOFTWARE.
 use wgpu_lite_wrapper::draw_context::{
     DrawContext, DrawModeParams, Drawable, DrawableBuilder, Uniform,
 };
-use wgpu_lite_wrapper::scenario::{UpdateContext, WinitEventLoopHandler};
+use wgpu_lite_wrapper::scenario::{RenderContext, WinitEventLoopHandler};
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./canvas_raw.wgsl");
 
@@ -56,12 +56,13 @@ impl MainScenario {
 }
 
 impl WinitEventLoopHandler for MainScenario {
-    fn on_update(&mut self, update_context: &UpdateContext) {
-        let &UpdateContext { update_interval } = update_context;
+    fn on_render(&mut self, render_context: &RenderContext, mut render_pass: wgpu::RenderPass<'_>) {
+        let &RenderContext {
+            render_interval: update_interval,
+            ..
+        } = render_context;
         self.time_uniform
             .write_uniform(update_interval.scenario_start.elapsed().as_secs_f32());
-    }
-    fn on_render(&mut self, _draw_context: &DrawContext, mut render_pass: wgpu::RenderPass<'_>) {
         self.canvas.render(&mut render_pass);
     }
 }

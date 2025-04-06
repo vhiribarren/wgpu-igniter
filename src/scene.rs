@@ -28,7 +28,7 @@ use cgmath::{Matrix4, SquareMatrix};
 
 use crate::{
     draw_context::{DrawContext, Drawable, Uniform},
-    scenario::UpdateContext,
+    scenario::RenderContext,
 };
 
 pub type DrawableWrapper = Rc<RefCell<dyn AsRef<Drawable>>>;
@@ -67,7 +67,7 @@ impl Scene3D {
     pub fn scene_uniforms(&self) -> &Scene3DUniforms {
         &self.scene_uniforms
     }
-    pub fn update(&mut self, _context: &UpdateContext, camera_matrix: Matrix4<f32>) {
+    pub fn update(&mut self, _context: &RenderContext, camera_matrix: Matrix4<f32>) {
         self.scene_uniforms
             .camera_uniform
             .write_uniform(camera_matrix.into());

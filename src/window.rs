@@ -33,7 +33,7 @@ use winit::window::{CursorIcon, Window, WindowId};
 
 use crate::draw_context::{self, Dimensions, DrawContext};
 use crate::scenario::{
-    UpdateContext, UpdateInterval, WinitEventLoopBuilder, WinitEventLoopHandler,
+    ProcessingInterval, RenderContext, WinitEventLoopBuilder, WinitEventLoopHandler,
 };
 use log::{debug, info};
 
@@ -235,25 +235,21 @@ impl ApplicationHandler<App> for AppHandlerState {
                 }
             }
             WindowEvent::RedrawRequested => {
-                let update_delta = app.last_draw_instant.elapsed();
+                let draw_delta = app.last_draw_instant.elapsed();
                 app.last_draw_instant = Instant::now();
                 if app.last_fps_instant.elapsed() >= TARGET_FPS_DISPLAY_PERIOD {
-                    info!(
-                        "FPS: {}",
-                        (1.0 / update_delta.as_secs_f64()).round() as usize
-                    );
+                    info!("FPS: {}", (1.0 / draw_delta.as_secs_f64()).round() as usize);
                     app.last_fps_instant = app.last_draw_instant;
                 };
-                app.scenario.on_update(&UpdateContext {
-                    update_interval: &UpdateInterval {
+                let render_context = &RenderContext {
+                    draw_context: &app.draw_context,
+                    render_interval: &ProcessingInterval {
                         scenario_start: app.scenario_start,
-                        update_delta,
+                        processing_delta: draw_delta,
                     },
-                });
+                };
                 app.draw_context
-                    .render_scene(|render_pass| {
-                        app.scenario.on_render(&app.draw_context, render_pass)
-                    })
+                    .render_scene(|render_pass| app.scenario.on_render(render_context, render_pass))
                     .unwrap();
             }
             _ => {}

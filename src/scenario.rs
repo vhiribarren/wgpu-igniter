@@ -30,22 +30,30 @@ use crate::{
 use web_time::{Duration, Instant};
 use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
 
-pub struct UpdateInterval {
+pub struct ProcessingInterval {
     pub scenario_start: Instant,
-    pub update_delta: Duration,
+    pub processing_delta: Duration,
 }
 
-pub struct UpdateContext<'a> {
-    pub update_interval: &'a UpdateInterval,
+impl Default for ProcessingInterval {
+    fn default() -> Self {
+        Self {
+            scenario_start: Instant::now(),
+            processing_delta: Duration::new(0, 0),
+        }
+    }
+}
+
+pub struct RenderContext<'a> {
+    pub render_interval: &'a ProcessingInterval,
+    pub draw_context: &'a DrawContext,
 }
 
 pub trait WinitEventLoopHandler {
     fn on_mouse_event(&mut self, _event: &DeviceEvent) {}
     fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
     fn on_window_event(&mut self, _event: &WindowEvent) {}
-    fn on_update(&mut self, _update_context: &UpdateContext) {}
-    // NOTE Also pass info from update context, with delta time, ...?
-    fn on_render(&mut self, _draw_context: &DrawContext, render_pass: wgpu::RenderPass<'_>);
+    fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>);
 }
 
 pub trait Scenario {
@@ -61,10 +69,10 @@ pub trait Scenario {
         self.camera_mut().keyboard_event_listener(event);
     }
     fn on_window_event(&mut self, _event: &WindowEvent) {}
-    fn on_update(&mut self, update_context: &UpdateContext);
+    fn on_update(&mut self, update_context: &RenderContext);
     fn on_post_render(
         &mut self,
-        _draw_context: &DrawContext,
+        _render_context: &RenderContext,
         _render_pass: &mut wgpu::RenderPass<'static>,
     ) {
     }
@@ -115,19 +123,16 @@ impl WinitEventLoopHandler for ScenarioScheduler {
         self.scenario.on_window_event(event);
     }
 
-    fn on_update(&mut self, update_context: &UpdateContext) {
+    fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
         self.scenario.camera_mut().update();
         let camera_matrix = self.scenario.camera().get_camera_matrix();
         self.scenario
             .scene_mut()
-            .update(update_context, camera_matrix);
-        self.scenario.on_update(update_context);
-    }
-
-    fn on_render(&mut self, draw_context: &DrawContext, render_pass: wgpu::RenderPass<'_>) {
+            .update(render_context, camera_matrix);
+        self.scenario.on_update(render_context);
         let mut rpass = render_pass.forget_lifetime();
         let scenario = self.scenario.as_mut();
         scenario.scene().render(&mut rpass);
-        scenario.on_post_render(draw_context, &mut rpass);
+        scenario.on_post_render(render_context, &mut rpass);
     }
 }

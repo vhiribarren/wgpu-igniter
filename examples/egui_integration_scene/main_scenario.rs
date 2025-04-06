@@ -29,7 +29,7 @@ use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
 use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::scenario::{Scenario, UpdateContext};
+use wgpu_lite_wrapper::scenario::{RenderContext, Scenario};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 use wgpu_lite_wrapper::support::egui::EguiSupport;
 use winit::window::Window;
@@ -109,9 +109,9 @@ impl MainScenario {
 impl Scenario for MainScenario {
     gen_camera_scene!(camera, scene);
 
-    fn on_update(&mut self, context: &UpdateContext) {
+    fn on_update(&mut self, context: &RenderContext) {
         let total_seconds = context
-            .update_interval
+            .render_interval
             .scenario_start
             .elapsed()
             .as_secs_f32();
@@ -134,11 +134,11 @@ impl Scenario for MainScenario {
 
     fn on_post_render(
         &mut self,
-        draw_context: &DrawContext,
+        render_context: &RenderContext,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
         self.egui_support
-            .draw(draw_context, render_pass, |egui_context| {
+            .draw(render_context.draw_context, render_pass, |egui_context| {
                 self.gui_state.generate_egui(egui_context);
             });
     }

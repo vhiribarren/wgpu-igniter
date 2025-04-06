@@ -28,7 +28,7 @@ use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
 use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::scenario::{Scenario, UpdateContext};
+use wgpu_lite_wrapper::scenario::{RenderContext, Scenario};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
 const DEFAULT_SHADER: &str = include_str!("cube_normals.wgsl");
@@ -66,9 +66,9 @@ impl MainScenario {
 impl Scenario for MainScenario {
     gen_camera_scene!(camera, scene);
 
-    fn on_update(&mut self, update_context: &UpdateContext) {
-        let update_interval = update_context.update_interval;
-        let delta_rotation = ROTATION_DEG_PER_S * update_interval.update_delta.as_secs_f32();
+    fn on_update(&mut self, update_context: &RenderContext) {
+        let update_interval = update_context.render_interval;
+        let delta_rotation = ROTATION_DEG_PER_S * update_interval.processing_delta.as_secs_f32();
         let transform = cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation))
             * cgmath::Matrix4::from_angle_y(cgmath::Deg(delta_rotation));
         self.cube.borrow_mut().apply_transform(transform);
