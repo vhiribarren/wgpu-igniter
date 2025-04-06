@@ -33,10 +33,25 @@ use winit::window::Window;
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");
 
+struct GuiState {
+    pub anim_speed: f32,
+    pixels_per_point: f32,
+}
+
+impl Default for GuiState {
+    fn default() -> Self {
+        Self {
+            anim_speed: 1.0,
+            pixels_per_point: 1.0,
+        }
+    }
+}
+
 pub struct MainScenario {
     canvas: Drawable,
     time_uniform: Uniform<f32>,
     egui_support: EguiSupport,
+    gui_state: GuiState,
     window: Arc<Window>,
 }
 
@@ -44,6 +59,7 @@ impl MainScenario {
     pub fn new(draw_context: &DrawContext) -> Self {
         let window = Arc::clone(draw_context.window.as_ref().unwrap());
         let egui_support = EguiSupport::new(draw_context, Arc::clone(&window));
+        let gui_state = GuiState::default();
         let time_uniform = Uniform::new(draw_context, 0f32);
         let shader_module = draw_context.create_shader_module(CANVAS_STATIC_SHADER);
         let mut drawable_builder = DrawableBuilder::new(
@@ -60,61 +76,20 @@ impl MainScenario {
             canvas,
             time_uniform,
             egui_support,
+            gui_state,
             window,
         }
     }
-    fn generate_egui(egui_context: &egui::Context) {
-        egui::Window::new("winit + egui + wgpu says hello!")
-            .resizable(true)
-            .vscroll(true)
-            .default_open(true)
-            .show(egui_context, |ui| {
-                egui::TopBottomPanel::top("top_panel")
-                    .resizable(true)
-                    .min_height(32.0)
-                    .show_inside(ui, |ui| {
-                        egui::ScrollArea::vertical().show(ui, |ui| {
-                            ui.vertical_centered(|ui| {
-                                ui.heading("Expandable Upper Panel");
-                            });
-                        });
-                    });
-                egui::SidePanel::left("left_panel")
-                    .resizable(true)
-                    .default_width(150.0)
-                    .width_range(80.0..=200.0)
-                    .show_inside(ui, |ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.heading("Left Panel");
-                        });
-                        egui::ScrollArea::vertical().show(ui, |_ui| {});
-                    });
-                egui::SidePanel::right("right_panel")
-                    .resizable(true)
-                    .default_width(150.0)
-                    .width_range(80.0..=200.0)
-                    .show_inside(ui, |ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.heading("Right Panel");
-                        });
-                        egui::ScrollArea::vertical().show(ui, |_ui| {});
-                    });
-                egui::TopBottomPanel::bottom("bottom_panel")
-                    .resizable(false)
-                    .min_height(0.0)
-                    .show_inside(ui, |ui| {
-                        ui.vertical_centered(|ui| {
-                            ui.heading("Bottom Panel");
-                        });
-                        ui.vertical_centered(|_ui| {});
-                    });
-                egui::CentralPanel::default().show_inside(ui, |ui| {
-                    ui.vertical_centered(|ui| {
-                        ui.heading("Central Panel");
-                    });
-                    egui::ScrollArea::vertical().show(ui, |_ui| {});
-                });
-            });
+    fn generate_egui(state: &mut GuiState, egui_context: &egui::Context) {
+        egui::TopBottomPanel::top("top_bar").show(egui_context, |ui| {
+            ui.label("Egui Integration Example");
+        });
+        egui::Window::new("Animation Control").show(egui_context, |ui| {
+            ui.label("Adjust the animation speed:");
+            ui.add(egui::Slider::new(&mut state.anim_speed, 0.1..=5.0).text("Speed"));
+            ui.add(egui::DragValue::new(&mut state.pixels_per_point).range(0.5..=2.0));
+            ui.label("Pixels per point");
+        });
     }
 }
 
@@ -124,8 +99,10 @@ impl WinitEventLoopHandler for MainScenario {
     }
     fn on_update(&mut self, update_context: &UpdateContext) {
         let &UpdateContext { update_interval } = update_context;
-        self.time_uniform
-            .write_uniform(update_interval.scenario_start.elapsed().as_secs_f32());
+        self.egui_support.pixels_per_point = self.gui_state.pixels_per_point;
+        self.time_uniform.write_uniform(
+            update_interval.scenario_start.elapsed().as_secs_f32() * self.gui_state.anim_speed,
+        );
     }
     fn on_render<'drawable>(
         &'drawable mut self,
@@ -134,7 +111,8 @@ impl WinitEventLoopHandler for MainScenario {
     ) {
         let mut rpass = render_pass.forget_lifetime();
         self.canvas.render(&mut rpass);
-        self.egui_support
-            .draw(draw_context, rpass, Self::generate_egui);
+        self.egui_support.draw(draw_context, rpass, |egui_context| {
+            Self::generate_egui(&mut self.gui_state, egui_context);
+        });
     }
 }

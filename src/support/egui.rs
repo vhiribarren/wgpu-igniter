@@ -7,9 +7,11 @@ use winit::window::Window;
 pub struct EguiSupport {
     egui_state: egui_winit::State,
     egui_renderer: egui_wgpu::Renderer,
+    pub pixels_per_point: f32,
     window: Arc<Window>,
 }
 impl EguiSupport {
+    const PIXELS_PER_POINT: f32 = 1.0;
     pub fn new(draw_context: &DrawContext, window: Arc<Window>) -> Self {
         let egui_state = egui_winit::State::new(
             egui::Context::default(),
@@ -29,8 +31,12 @@ impl EguiSupport {
         Self {
             egui_state,
             egui_renderer,
+            pixels_per_point: Self::PIXELS_PER_POINT,
             window,
         }
+    }
+    pub fn egui_context(&self) -> &egui::Context {
+        self.egui_state.egui_ctx()
     }
 
     pub fn on_window_event(
@@ -54,7 +60,7 @@ impl EguiSupport {
                 draw_context.surface_config.width,
                 draw_context.surface_config.height,
             ],
-            pixels_per_point: 2.,
+            pixels_per_point: self.pixels_per_point,
         };
         let mut encoder = draw_context
             .device
@@ -65,8 +71,8 @@ impl EguiSupport {
         self.end_frame_and_draw(
             &draw_context.device,
             &draw_context.queue,
-            &mut encoder,
             screen_descriptor,
+            &mut encoder,
             &mut rpass,
         );
     }
@@ -80,8 +86,8 @@ impl EguiSupport {
         &mut self,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        encoder: &mut wgpu::CommandEncoder,
         screen_descriptor: egui_wgpu::ScreenDescriptor,
+        encoder: &mut wgpu::CommandEncoder,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
         // TODO We must call begin_frame before calling end_frame_and_draw, otherwise panic
