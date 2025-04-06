@@ -36,9 +36,9 @@ pub type DrawableWrapper = Rc<RefCell<dyn AsRef<Drawable>>>;
 pub trait Scene {
     fn add(&mut self, element: DrawableWrapper);
     fn drawables(&self) -> &[DrawableWrapper];
-    fn render<'drawable>(&'drawable self, mut render_pass: wgpu::RenderPass<'drawable>) {
+    fn render(&self, render_pass: &mut wgpu::RenderPass<'_>) {
         for drawable in self.drawables() {
-            drawable.borrow().as_ref().render(&mut render_pass);
+            drawable.borrow().as_ref().render(render_pass);
         }
     }
 }

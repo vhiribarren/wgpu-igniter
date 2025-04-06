@@ -13,6 +13,7 @@ pub struct EguiSupport {
 impl EguiSupport {
     const PIXELS_PER_POINT: f32 = 1.0;
     pub fn new(draw_context: &DrawContext) -> Self {
+        // TODO Case when window is not available ; mock window?
         let window = Arc::clone(draw_context.window.as_ref().unwrap());
         let egui_state = egui_winit::State::new(
             egui::Context::default(),
@@ -51,7 +52,7 @@ impl EguiSupport {
     pub fn draw<F>(
         &mut self,
         draw_context: &DrawContext,
-        mut rpass: wgpu::RenderPass<'static>,
+        rpass: &mut wgpu::RenderPass<'static>,
         run_ui: F,
     ) where
         F: FnOnce(&egui::Context),
@@ -74,7 +75,7 @@ impl EguiSupport {
             &draw_context.queue,
             screen_descriptor,
             &mut encoder,
-            &mut rpass,
+            rpass,
         );
     }
 

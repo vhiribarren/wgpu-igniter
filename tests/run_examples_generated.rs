@@ -64,4 +64,6 @@ generate_test_case!(example_cube_two_doesnt_panic, "cube_two");
 #[rustfmt::skip]
 generate_test_case!(example_egui_integration_direct_doesnt_panic, "egui_integration_direct");
 #[rustfmt::skip]
+generate_test_case!(example_egui_integration_scene_doesnt_panic, "egui_integration_scene");
+#[rustfmt::skip]
 generate_test_case!(example_triangle_direct_doesnt_panic, "triangle_direct");

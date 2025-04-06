@@ -44,6 +44,7 @@ pub trait WinitEventLoopHandler {
     fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
     fn on_window_event(&mut self, _event: &WindowEvent) {}
     fn on_update(&mut self, _update_context: &UpdateContext) {}
+    // NOTE Also pass info from update context, with delta time, ...?
     fn on_render<'a>(&'a mut self, _draw_context: &DrawContext, render_pass: wgpu::RenderPass<'a>); // NOTE Use static mode of RenderPass?
 }
 
@@ -53,8 +54,15 @@ pub trait Scenario {
     fn camera_mut(&mut self) -> &mut WinitCameraAdapter;
     fn scene(&self) -> &Scene3D;
     fn scene_mut(&mut self) -> &mut Scene3D;
+    fn on_mouse_event(&mut self, event: &DeviceEvent) {
+        self.camera_mut().mouse_event_listener(event);
+    }
+    fn on_keyboard_event(&mut self, event: &KeyEvent) {
+        self.camera_mut().keyboard_event_listener(event);
+    }
+    fn on_window_event(&mut self, _event: &WindowEvent) {}
     fn on_update(&mut self, update_context: &UpdateContext);
-    // NOTE Here how can use egui with this signature? Do I also need an on_render? Could have an empty default implementation
+    fn on_post_render(&mut self, _draw_context: &DrawContext, _render_pass: &mut wgpu::RenderPass<'static>) {}
 }
 
 #[macro_export]
@@ -91,14 +99,16 @@ impl ScenarioScheduler {
 
 impl WinitEventLoopHandler for ScenarioScheduler {
     fn on_mouse_event(&mut self, event: &DeviceEvent) {
-        self.scenario.camera_mut().mouse_event_listener(event);
+        self.scenario.on_mouse_event(event);
     }
 
     fn on_keyboard_event(&mut self, event: &KeyEvent) {
         self.scenario.camera_mut().keyboard_event_listener(event);
     }
 
-    fn on_window_event(&mut self, _event: &WindowEvent) {}
+    fn on_window_event(&mut self, event: &WindowEvent) {
+        self.scenario.on_window_event(event);
+    }
 
     fn on_update(&mut self, update_context: &UpdateContext) {
         self.scenario.camera_mut().update();
@@ -109,7 +119,10 @@ impl WinitEventLoopHandler for ScenarioScheduler {
         self.scenario.on_update(update_context);
     }
 
-    fn on_render<'a>(&'a mut self, _draw_context: &DrawContext, render_pass: wgpu::RenderPass<'a>) {
-        self.scenario.scene().render(render_pass);
+    fn on_render(&mut self, draw_context: &DrawContext, render_pass: wgpu::RenderPass<'_>) {
+        let mut rpass =render_pass.forget_lifetime();
+        let scenario = self.scenario.as_mut();
+        scenario.scene().render( &mut  rpass);
+        scenario.on_post_render(draw_context,  &mut  rpass);
     }
 }

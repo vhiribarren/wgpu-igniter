@@ -111,7 +111,7 @@ impl WinitEventLoopHandler for MainScenario {
     ) {
         let mut rpass = render_pass.forget_lifetime();
         self.canvas.render(&mut rpass);
-        self.egui_support.draw(draw_context, rpass, |egui_context| {
+        self.egui_support.draw(draw_context, &mut rpass, |egui_context| {
             Self::generate_egui(&mut self.gui_state, egui_context);
         });
     }
