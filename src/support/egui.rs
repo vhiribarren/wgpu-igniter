@@ -41,12 +41,8 @@ impl EguiSupport {
         self.egui_state.egui_ctx()
     }
 
-    pub fn on_window_event(
-        &mut self,
-        window: &Window,
-        event: &winit::event::WindowEvent,
-    ) -> EventResponse {
-        self.egui_state.on_window_event(window, event)
+    pub fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventResponse {
+        self.egui_state.on_window_event(&self.window, event)
     }
 
     pub fn draw<F>(

@@ -22,14 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use std::sync::Arc;
-
 use wgpu_lite_wrapper::draw_context::{
     DrawContext, DrawModeParams, Drawable, DrawableBuilder, Uniform,
 };
 use wgpu_lite_wrapper::scenario::{RenderContext, WinitEventLoopHandler};
 use wgpu_lite_wrapper::support::egui::EguiSupport;
-use winit::window::Window;
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");
 
@@ -52,12 +49,10 @@ pub struct MainScenario {
     time_uniform: Uniform<f32>,
     egui_support: EguiSupport,
     gui_state: GuiState,
-    window: Arc<Window>,
 }
 
 impl MainScenario {
     pub fn new(draw_context: &DrawContext) -> Self {
-        let window = Arc::clone(draw_context.window.as_ref().unwrap());
         let egui_support = EguiSupport::new(draw_context);
         let gui_state = GuiState::default();
         let time_uniform = Uniform::new(draw_context, 0f32);
@@ -77,7 +72,6 @@ impl MainScenario {
             time_uniform,
             egui_support,
             gui_state,
-            window,
         }
     }
     fn generate_egui(state: &mut GuiState, egui_context: &egui::Context) {
@@ -95,7 +89,7 @@ impl MainScenario {
 
 impl WinitEventLoopHandler for MainScenario {
     fn on_window_event(&mut self, event: &winit::event::WindowEvent) {
-        let _ = self.egui_support.on_window_event(&self.window, event);
+        let _ = self.egui_support.on_window_event(event);
     }
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
         let &RenderContext {

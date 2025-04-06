@@ -23,7 +23,6 @@ SOFTWARE.
 */
 
 use std::rc::Rc;
-use std::sync::Arc;
 
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
@@ -32,7 +31,6 @@ use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_lite_wrapper::scenario::{RenderContext, Scenario};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 use wgpu_lite_wrapper::support::egui::EguiSupport;
-use winit::window::Window;
 
 const DEFAULT_SHADER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -75,12 +73,10 @@ pub struct MainScenario {
     camera: WinitCameraAdapter,
     egui_support: EguiSupport,
     gui_state: GuiState,
-    window: Arc<Window>,
 }
 
 impl MainScenario {
     pub fn new(draw_context: &DrawContext) -> Self {
-        let window = Arc::clone(draw_context.window.as_ref().unwrap());
         let egui_support = EguiSupport::new(draw_context);
         let gui_state = GuiState::default();
         let camera = WinitCameraAdapter::new(PerspectiveConfig::default().into());
@@ -101,7 +97,6 @@ impl MainScenario {
             camera,
             egui_support,
             gui_state,
-            window,
         }
     }
 }
@@ -128,8 +123,7 @@ impl Scenario for MainScenario {
 
     // NOTE Or maybe EguiSupport could add some callbacks to the window event, to avoid having to write those lines? Actually, could be the base of other mechanisms like for Scene3D, instead of manually iterating on the drawables?
     fn on_window_event(&mut self, event: &winit::event::WindowEvent) {
-        // NOTE How can I avoid storing the window myself?
-        let _ = self.egui_support.on_window_event(&self.window, event);
+        let _ = self.egui_support.on_window_event(event);
     }
 
     fn on_post_render(
