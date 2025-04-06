@@ -41,7 +41,6 @@ const DEFAULT_SHADER: &str = include_str!(concat!(
 
 const ROTATION_DEG_PER_S: f32 = 45.0;
 
-
 struct GuiState {
     pub anim_speed: f32,
     pixels_per_point: f32,
@@ -105,7 +104,6 @@ impl MainScenario {
             window,
         }
     }
-    
 }
 
 impl Scenario for MainScenario {
@@ -134,9 +132,14 @@ impl Scenario for MainScenario {
         let _ = self.egui_support.on_window_event(&self.window, event);
     }
 
-    fn on_post_render(&mut self, draw_context: &DrawContext, render_pass: &mut wgpu::RenderPass<'static>) {
-        self.egui_support.draw(draw_context, render_pass, |egui_context| {
-            self.gui_state.generate_egui(egui_context);
-        });
+    fn on_post_render(
+        &mut self,
+        draw_context: &DrawContext,
+        render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
+        self.egui_support
+            .draw(draw_context, render_pass, |egui_context| {
+                self.gui_state.generate_egui(egui_context);
+            });
     }
 }

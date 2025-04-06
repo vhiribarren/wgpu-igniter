@@ -89,11 +89,7 @@ impl WinitEventLoopHandler for MainScenario {
             * cgmath::Matrix4::from_angle_z(cgmath::Deg(new_rotation));
         self.transform_uniform.write_uniform(transform.into());
     }
-    fn on_render<'drawable>(
-        &mut self,
-        _draw_context: &DrawContext,
-        mut render_pass: wgpu::RenderPass<'drawable>,
-    ) {
+    fn on_render(&mut self, _draw_context: &DrawContext, mut render_pass: wgpu::RenderPass<'_>) {
         self.triangle.render(&mut render_pass);
     }
 

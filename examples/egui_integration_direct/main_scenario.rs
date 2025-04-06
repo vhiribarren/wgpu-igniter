@@ -104,15 +104,12 @@ impl WinitEventLoopHandler for MainScenario {
             update_interval.scenario_start.elapsed().as_secs_f32() * self.gui_state.anim_speed,
         );
     }
-    fn on_render<'drawable>(
-        &'drawable mut self,
-        draw_context: &DrawContext,
-        render_pass: wgpu::RenderPass<'drawable>,
-    ) {
+    fn on_render(&mut self, draw_context: &DrawContext, render_pass: wgpu::RenderPass<'_>) {
         let mut rpass = render_pass.forget_lifetime();
         self.canvas.render(&mut rpass);
-        self.egui_support.draw(draw_context, &mut rpass, |egui_context| {
-            Self::generate_egui(&mut self.gui_state, egui_context);
-        });
+        self.egui_support
+            .draw(draw_context, &mut rpass, |egui_context| {
+                Self::generate_egui(&mut self.gui_state, egui_context);
+            });
     }
 }

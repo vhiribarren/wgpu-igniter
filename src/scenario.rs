@@ -45,7 +45,7 @@ pub trait WinitEventLoopHandler {
     fn on_window_event(&mut self, _event: &WindowEvent) {}
     fn on_update(&mut self, _update_context: &UpdateContext) {}
     // NOTE Also pass info from update context, with delta time, ...?
-    fn on_render<'a>(&'a mut self, _draw_context: &DrawContext, render_pass: wgpu::RenderPass<'a>); // NOTE Use static mode of RenderPass?
+    fn on_render(&mut self, _draw_context: &DrawContext, render_pass: wgpu::RenderPass<'_>);
 }
 
 pub trait Scenario {
@@ -62,7 +62,12 @@ pub trait Scenario {
     }
     fn on_window_event(&mut self, _event: &WindowEvent) {}
     fn on_update(&mut self, update_context: &UpdateContext);
-    fn on_post_render(&mut self, _draw_context: &DrawContext, _render_pass: &mut wgpu::RenderPass<'static>) {}
+    fn on_post_render(
+        &mut self,
+        _draw_context: &DrawContext,
+        _render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
+    }
 }
 
 #[macro_export]
@@ -120,9 +125,9 @@ impl WinitEventLoopHandler for ScenarioScheduler {
     }
 
     fn on_render(&mut self, draw_context: &DrawContext, render_pass: wgpu::RenderPass<'_>) {
-        let mut rpass =render_pass.forget_lifetime();
+        let mut rpass = render_pass.forget_lifetime();
         let scenario = self.scenario.as_mut();
-        scenario.scene().render( &mut  rpass);
-        scenario.on_post_render(draw_context,  &mut  rpass);
+        scenario.scene().render(&mut rpass);
+        scenario.on_post_render(draw_context, &mut rpass);
     }
 }
