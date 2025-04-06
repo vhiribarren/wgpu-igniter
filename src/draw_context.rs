@@ -28,7 +28,6 @@ use std::marker::PhantomData;
 use std::rc::Rc;
 use std::sync::Arc;
 
-use crate::scenario::WinitEventLoopHandler;
 use anyhow::{Ok, anyhow, bail};
 use bytemuck::NoUninit;
 use log::debug;
@@ -879,7 +878,10 @@ impl DrawContext {
             .create_multisample_texture(&self.surface_config, &self.multisample_config);
     }
 
-    pub fn render_scene(&self, scene: &mut dyn WinitEventLoopHandler) -> anyhow::Result<()> {
+    pub fn render_scene<C>(&self, callback: C) -> anyhow::Result<()>
+    where
+        C: FnOnce(wgpu::RenderPass<'_>),
+    {
         let depth_texture_view = self
             .depth_texture
             .create_view(&wgpu::TextureViewDescriptor::default());
@@ -940,7 +942,7 @@ impl DrawContext {
                 stencil_ops: None,
             }),
         });
-        scene.on_render(self, render_pass);
+        callback(render_pass);
         let command_buffers = std::iter::once(encoder.finish());
         self.queue.submit(command_buffers);
         if let Some(s) = surface_texture {

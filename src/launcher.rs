@@ -89,7 +89,10 @@ fn init_headless(builder: Box<WinitEventLoopBuilder>) {
     use pollster::FutureExt;
     let context = &mut DrawContext::new(None, None).block_on().unwrap();
     let mut scene_handler = builder(context);
-    context.render_scene(scene_handler.as_mut()).unwrap();
+    // NOTE I do not like this circular dependency on context
+    context
+        .render_scene(|pass| scene_handler.on_render(context, pass))
+        .unwrap();
 }
 
 #[cfg(target_arch = "wasm32")]

@@ -234,7 +234,7 @@ impl ApplicationHandler<App> for AppHandlerState {
                         .left_button_action(state, app.window.as_ref());
                 }
             }
-            WindowEvent::RedrawRequested { .. } => {
+            WindowEvent::RedrawRequested => {
                 let update_delta = app.last_draw_instant.elapsed();
                 app.last_draw_instant = Instant::now();
                 if app.last_fps_instant.elapsed() >= TARGET_FPS_DISPLAY_PERIOD {
@@ -251,7 +251,9 @@ impl ApplicationHandler<App> for AppHandlerState {
                     },
                 });
                 app.draw_context
-                    .render_scene(app.scenario.as_mut())
+                    .render_scene(|render_pass| {
+                        app.scenario.on_render(&app.draw_context, render_pass)
+                    })
                     .unwrap();
             }
             _ => {}

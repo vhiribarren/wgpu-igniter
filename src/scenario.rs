@@ -43,17 +43,18 @@ pub trait WinitEventLoopHandler {
     fn on_mouse_event(&mut self, _event: &DeviceEvent) {}
     fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
     fn on_window_event(&mut self, _event: &WindowEvent) {}
-
     fn on_update(&mut self, _update_context: &UpdateContext) {}
-    fn on_render<'a>(&'a mut self, _draw_context: &DrawContext, render_pass: wgpu::RenderPass<'a>);
+    fn on_render<'a>(&'a mut self, _draw_context: &DrawContext, render_pass: wgpu::RenderPass<'a>); // NOTE Use static mode of RenderPass?
 }
 
 pub trait Scenario {
+    // NOTE maybe I should just return one struct, having both camera and scene, it will halve those methods, and maybe help me managing split borrow between camera and scene
     fn camera(&self) -> &WinitCameraAdapter;
     fn camera_mut(&mut self) -> &mut WinitCameraAdapter;
     fn scene(&self) -> &Scene3D;
     fn scene_mut(&mut self) -> &mut Scene3D;
     fn on_update(&mut self, update_context: &UpdateContext);
+    // NOTE Here how can use egui with this signature? Do I also need an on_render? Could have an empty default implementation
 }
 
 #[macro_export]
