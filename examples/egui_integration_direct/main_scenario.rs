@@ -96,7 +96,8 @@ impl WinitEventLoopHandler for MainScenario {
             render_interval: update_interval,
             draw_context,
         } = render_context;
-        self.egui_support.pixels_per_point = self.gui_state.pixels_per_point;
+        self.egui_support
+            .set_pixels_per_point(self.gui_state.pixels_per_point);
         self.time_uniform.write_uniform(
             update_interval.scenario_start.elapsed().as_secs_f32() * self.gui_state.anim_speed,
         );

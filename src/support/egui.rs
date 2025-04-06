@@ -4,21 +4,29 @@ use crate::draw_context::DrawContext;
 use egui_winit::EventResponse;
 use winit::window::Window;
 
-pub struct EguiSupport {
+pub enum EguiSupport {
+    NoWindow(egui::Context),
+    WithWindow(EguiSupportWithWindow),
+}
+
+pub struct EguiSupportWithWindow {
     egui_state: egui_winit::State,
     egui_renderer: egui_wgpu::Renderer,
-    pub pixels_per_point: f32,
+    pixels_per_point: f32,
     window: Arc<Window>,
 }
+
 impl EguiSupport {
     const PIXELS_PER_POINT: f32 = 1.0;
     pub fn new(draw_context: &DrawContext) -> Self {
-        // TODO Case when window is not available ; mock window?
-        let window = Arc::clone(draw_context.window.as_ref().unwrap());
+        let Some(window) = draw_context.window.as_ref() else {
+            return EguiSupport::NoWindow(egui::Context::default());
+        };
+        let window = Arc::clone(window);
         let egui_state = egui_winit::State::new(
             egui::Context::default(),
             egui::ViewportId::default(),
-            &Arc::clone(&window),
+            &window,
             Some(window.scale_factor() as f32),
             None,
             None,
@@ -30,19 +38,35 @@ impl EguiSupport {
             draw_context.multisample_config.get_multisample_count(),
             true,
         );
-        Self {
+        EguiSupport::WithWindow(EguiSupportWithWindow {
             egui_state,
             egui_renderer,
             pixels_per_point: Self::PIXELS_PER_POINT,
             window,
+        })
+    }
+    pub fn set_pixels_per_point(&mut self, pixels_per_point: f32) {
+        match self {
+            EguiSupport::WithWindow(egui_support) => {
+                egui_support.pixels_per_point = pixels_per_point;
+            }
+            EguiSupport::NoWindow(_) => {}
         }
     }
     pub fn egui_context(&self) -> &egui::Context {
-        self.egui_state.egui_ctx()
+        match self {
+            EguiSupport::NoWindow(ctx) => ctx,
+            EguiSupport::WithWindow(egui_support) => egui_support.egui_state.egui_ctx(),
+        }
     }
 
     pub fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventResponse {
-        self.egui_state.on_window_event(&self.window, event)
+        match self {
+            EguiSupport::WithWindow(egui_support) => egui_support
+                .egui_state
+                .on_window_event(&egui_support.window, event),
+            EguiSupport::NoWindow(_) => EventResponse::default(),
+        }
     }
 
     pub fn draw<F>(
@@ -53,20 +77,24 @@ impl EguiSupport {
     ) where
         F: FnOnce(&egui::Context),
     {
+        let EguiSupport::WithWindow(egui_support) = self else {
+            return;
+        };
         let screen_descriptor = egui_wgpu::ScreenDescriptor {
             size_in_pixels: [
                 draw_context.surface_config.width,
                 draw_context.surface_config.height,
             ],
-            pixels_per_point: self.pixels_per_point,
+            pixels_per_point: egui_support.pixels_per_point,
         };
         let mut encoder = draw_context
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        self.begin_frame();
-        let egui_context = self.egui_state.egui_ctx();
+        Self::begin_frame(egui_support);
+        let egui_context = egui_support.egui_state.egui_ctx();
         run_ui(egui_context);
-        self.end_frame_and_draw(
+        Self::end_frame_and_draw(
+            egui_support,
             &draw_context.device,
             &draw_context.queue,
             screen_descriptor,
@@ -75,13 +103,15 @@ impl EguiSupport {
         );
     }
 
-    fn begin_frame(&mut self) {
-        let raw_input = self.egui_state.take_egui_input(&self.window);
-        self.egui_state.egui_ctx().begin_pass(raw_input);
+    fn begin_frame(egui_support: &mut EguiSupportWithWindow) {
+        let raw_input = egui_support
+            .egui_state
+            .take_egui_input(&egui_support.window);
+        egui_support.egui_state.egui_ctx().begin_pass(raw_input);
     }
 
     fn end_frame_and_draw(
-        &mut self,
+        egui_support: &mut EguiSupportWithWindow,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         screen_descriptor: egui_wgpu::ScreenDescriptor,
@@ -89,29 +119,38 @@ impl EguiSupport {
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
         // TODO We must call begin_frame before calling end_frame_and_draw, otherwise panic
-        self.egui_state
+        egui_support
+            .egui_state
             .egui_ctx()
             .set_pixels_per_point(screen_descriptor.pixels_per_point);
-        let full_output = self.egui_state.egui_ctx().end_pass();
+        let full_output = egui_support.egui_state.egui_ctx().end_pass();
 
-        self.egui_state
-            .handle_platform_output(&self.window, full_output.platform_output);
+        egui_support
+            .egui_state
+            .handle_platform_output(&egui_support.window, full_output.platform_output);
 
-        let tris = self.egui_state.egui_ctx().tessellate(
+        let tris = egui_support.egui_state.egui_ctx().tessellate(
             full_output.shapes,
-            self.egui_state.egui_ctx().pixels_per_point(),
+            egui_support.egui_state.egui_ctx().pixels_per_point(),
         );
         for (id, image_delta) in &full_output.textures_delta.set {
-            self.egui_renderer
+            egui_support
+                .egui_renderer
                 .update_texture(device, queue, *id, image_delta);
         }
-        self.egui_renderer
-            .update_buffers(device, queue, encoder, &tris, &screen_descriptor);
+        egui_support.egui_renderer.update_buffers(
+            device,
+            queue,
+            encoder,
+            &tris,
+            &screen_descriptor,
+        );
 
-        self.egui_renderer
+        egui_support
+            .egui_renderer
             .render(render_pass, &tris, &screen_descriptor);
         for x in &full_output.textures_delta.free {
-            self.egui_renderer.free_texture(x)
+            egui_support.egui_renderer.free_texture(x)
         }
     }
 }
