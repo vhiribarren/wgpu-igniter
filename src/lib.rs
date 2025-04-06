@@ -28,4 +28,5 @@ pub mod launcher;
 pub mod primitives;
 pub mod scenario;
 pub mod scene;
+pub mod support;
 pub mod window;
