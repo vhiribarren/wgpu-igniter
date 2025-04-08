@@ -201,7 +201,10 @@ impl ApplicationHandler<App> for AppHandlerState {
         let Some(ref mut app) = self.state else {
             return;
         };
-        app.scenario.on_window_event(&event);
+        let event_response = app.scenario.on_window_event(&event);
+        if event_response.consumed {
+            return;
+        }
         match event {
             WindowEvent::CloseRequested => {
                 debug!("Closing app");

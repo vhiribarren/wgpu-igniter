@@ -22,4 +22,4 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-include!("../examples/cube_instances/main_scenario.rs");
+include!("../examples/egui_integration_scene/main_scenario.rs");

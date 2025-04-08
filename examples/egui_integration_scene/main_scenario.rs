@@ -24,6 +24,7 @@ SOFTWARE.
 
 use std::rc::Rc;
 
+use egui_winit::EventResponse;
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
@@ -32,6 +33,7 @@ use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_lite_wrapper::scenario::{RenderContext, Scenario};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 use wgpu_lite_wrapper::support::egui::EguiSupport;
+use winit::event::DeviceEvent;
 
 const DEFAULT_SHADER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -116,9 +118,17 @@ impl Scenario for MainScenario {
             .set_transform(transform * z_translation);
     }
 
-    // NOTE Or maybe EguiSupport could add some callbacks to the window event, to avoid having to write those lines? Actually, could be the base of other mechanisms like for Scene3D, instead of manually iterating on the drawables?
-    fn on_window_event(&mut self, event: &winit::event::WindowEvent) {
-        let _ = self.egui_support.on_window_event(event);
+    // NOTE Or maybe EguiSupport could add some callbacks to the window event, to avoid having to write those lines?
+    // Actually, could be the base of other mechanisms like for Scene3D, instead of manually iterating on the drawables?
+    fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventResponse {
+        self.egui_support.on_window_event(event)
+    }
+
+    fn on_mouse_event(&mut self, event: &DeviceEvent) {
+        if self.egui_support.egui_context().is_using_pointer() {
+            return;
+        }
+        self.camera_mut().mouse_event_listener(event);
     }
 
     fn on_post_render(

@@ -27,6 +27,7 @@ use crate::{
     draw_context::DrawContext,
     scene::{Scene, Scene3D},
 };
+use egui_winit::EventResponse;
 use web_time::{Duration, Instant};
 use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
 
@@ -52,7 +53,9 @@ pub struct RenderContext<'a> {
 pub trait WinitEventLoopHandler {
     fn on_mouse_event(&mut self, _event: &DeviceEvent) {}
     fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
-    fn on_window_event(&mut self, _event: &WindowEvent) {}
+    fn on_window_event(&mut self, _event: &WindowEvent) -> EventResponse {
+        EventResponse::default()
+    }
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>);
 }
 
@@ -68,7 +71,10 @@ pub trait Scenario {
     fn on_keyboard_event(&mut self, event: &KeyEvent) {
         self.camera_mut().keyboard_event_listener(event);
     }
-    fn on_window_event(&mut self, _event: &WindowEvent) {}
+    fn on_window_event(&mut self, _event: &WindowEvent) -> EventResponse {
+        EventResponse::default()
+    }
+    fn on_resize(&mut self, _draw_context: &DrawContext) {}
     fn on_update(&mut self, update_context: &RenderContext);
     fn on_post_render(
         &mut self,
@@ -119,8 +125,8 @@ impl WinitEventLoopHandler for ScenarioScheduler {
         self.scenario.camera_mut().keyboard_event_listener(event);
     }
 
-    fn on_window_event(&mut self, event: &WindowEvent) {
-        self.scenario.on_window_event(event);
+    fn on_window_event(&mut self, event: &WindowEvent) -> EventResponse {
+        self.scenario.on_window_event(event)
     }
 
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
