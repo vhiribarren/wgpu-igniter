@@ -17,7 +17,6 @@ pub struct EguiSupportWithWindow {
 }
 
 impl EguiSupport {
-    const PIXELS_PER_POINT: f32 = 1.0;
     pub fn new(draw_context: &DrawContext) -> Self {
         let Some(window) = draw_context.window.as_ref() else {
             return EguiSupport::NoWindow(egui::Context::default());
@@ -27,7 +26,7 @@ impl EguiSupport {
             egui::Context::default(),
             egui::ViewportId::default(),
             &window,
-            Some(window.scale_factor() as f32),
+            None,
             None,
             None,
         );
@@ -41,7 +40,7 @@ impl EguiSupport {
         EguiSupport::WithWindow(EguiSupportWithWindow {
             egui_state,
             egui_renderer,
-            pixels_per_point: Self::PIXELS_PER_POINT,
+            pixels_per_point: window.scale_factor() as f32,
             window,
         })
     }
@@ -51,6 +50,12 @@ impl EguiSupport {
                 egui_support.pixels_per_point = pixels_per_point;
             }
             EguiSupport::NoWindow(_) => {}
+        }
+    }
+    pub fn get_pixels_per_point(&self) -> f32 {
+        match self {
+            EguiSupport::WithWindow(egui_support) => egui_support.pixels_per_point,
+            EguiSupport::NoWindow(_) => 1.0,
         }
     }
     pub fn egui_context(&self) -> &egui::Context {

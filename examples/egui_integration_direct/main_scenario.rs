@@ -35,15 +35,6 @@ struct GuiState {
     pixels_per_point: f32,
 }
 
-impl Default for GuiState {
-    fn default() -> Self {
-        Self {
-            anim_speed: 1.0,
-            pixels_per_point: 1.0,
-        }
-    }
-}
-
 pub struct MainScenario {
     canvas: Drawable,
     time_uniform: Uniform<f32>,
@@ -54,7 +45,10 @@ pub struct MainScenario {
 impl MainScenario {
     pub fn new(draw_context: &DrawContext) -> Self {
         let egui_support = EguiSupport::new(draw_context);
-        let gui_state = GuiState::default();
+        let gui_state = GuiState {
+            pixels_per_point: egui_support.get_pixels_per_point(),
+            anim_speed: 1.0,
+        };
         let time_uniform = Uniform::new(draw_context, 0f32);
         let shader_module = draw_context.create_shader_module(CANVAS_STATIC_SHADER);
         let mut drawable_builder = DrawableBuilder::new(

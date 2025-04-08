@@ -102,6 +102,6 @@ fn init_headless(builder: Box<WinitEventLoopBuilder>) {
 }
 
 #[cfg(target_arch = "wasm32")]
-fn init_headless(builder: Box<WinitEventLoopBuilder>) {
+fn init_headless(_builder: Box<WinitEventLoopBuilder>) {
     todo!("Headless mode is not supported in WASM");
 }

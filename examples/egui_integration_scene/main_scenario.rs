@@ -27,6 +27,7 @@ use std::rc::Rc;
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::gen_camera_scene;
+use wgpu_lite_wrapper::primitives::cube::CubeOptions;
 use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_lite_wrapper::scenario::{RenderContext, Scenario};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
@@ -58,15 +59,6 @@ impl GuiState {
     }
 }
 
-impl Default for GuiState {
-    fn default() -> Self {
-        Self {
-            anim_speed: 1.0,
-            pixels_per_point: 1.0,
-        }
-    }
-}
-
 pub struct MainScenario {
     cube: Rc<std::cell::RefCell<Object3D>>,
     scene: Scene3D,
@@ -78,7 +70,10 @@ pub struct MainScenario {
 impl MainScenario {
     pub fn new(draw_context: &DrawContext) -> Self {
         let egui_support = EguiSupport::new(draw_context);
-        let gui_state = GuiState::default();
+        let gui_state = GuiState {
+            pixels_per_point: egui_support.get_pixels_per_point(),
+            anim_speed: 1.0,
+        };
         let camera = WinitCameraAdapter::new(PerspectiveConfig::default().into());
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut scene = Scene3D::new(draw_context);
@@ -87,7 +82,7 @@ impl MainScenario {
             &shader_module,
             &shader_module,
             scene.scene_uniforms(),
-            Default::default(),
+            CubeOptions::default(),
         )
         .into_shareable();
         scene.add(cube.clone());
