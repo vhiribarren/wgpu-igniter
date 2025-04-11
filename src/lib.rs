@@ -30,3 +30,7 @@ pub mod scenario;
 pub mod scene;
 pub mod support;
 pub mod window;
+
+#[cfg(feature = "egui")]
+pub use egui;
+pub use wgpu;
