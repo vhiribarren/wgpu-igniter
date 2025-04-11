@@ -34,3 +34,4 @@ pub mod window;
 #[cfg(feature = "egui")]
 pub use egui;
 pub use wgpu;
+pub use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
