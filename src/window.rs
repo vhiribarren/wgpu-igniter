@@ -238,6 +238,11 @@ impl ApplicationHandler<App> for AppHandlerState {
                 }
             }
             WindowEvent::RedrawRequested => {
+                if app.scenario.is_finished() {
+                    info!("Scenario is finished, stopping");
+                    event_loop.exit();
+                    return;
+                }
                 let draw_delta = app.last_draw_instant.elapsed();
                 app.last_draw_instant = Instant::now();
                 if app.last_fps_instant.elapsed() >= TARGET_FPS_DISPLAY_PERIOD {

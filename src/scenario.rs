@@ -57,6 +57,9 @@ pub trait WinitEventLoopHandler {
         EventResponse::default()
     }
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>);
+    fn is_finished(&self) -> bool {
+        false
+    }
 }
 
 pub trait Scenario {
