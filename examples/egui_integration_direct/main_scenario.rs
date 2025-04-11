@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+use egui_winit::EventResponse;
 use wgpu_lite_wrapper::draw_context::{
     DrawContext, DrawModeParams, Drawable, DrawableBuilder, Uniform,
 };
@@ -82,8 +83,8 @@ impl MainScenario {
 }
 
 impl WinitEventLoopHandler for MainScenario {
-    fn on_window_event(&mut self, event: &winit::event::WindowEvent) {
-        let _ = self.egui_support.on_window_event(event);
+    fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventResponse {
+        self.egui_support.on_window_event(event)
     }
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
         let &RenderContext {
