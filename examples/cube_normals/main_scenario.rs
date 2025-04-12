@@ -26,9 +26,8 @@ use std::rc::Rc;
 
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
-use wgpu_lite_wrapper::gen_camera_scene;
 use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::scenario::{RenderContext, Scenario};
+use wgpu_lite_wrapper::scenario::{RenderContext, Scenario, SceneElements};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
 const DEFAULT_SHADER: &str = include_str!("cube_normals.wgsl");
@@ -37,8 +36,7 @@ const ROTATION_DEG_PER_S: f32 = 45.0;
 
 pub struct MainScenario {
     pub cube: Rc<std::cell::RefCell<Object3D>>,
-    pub scene: Scene3D,
-    pub camera: WinitCameraAdapter,
+    pub scene_elements: SceneElements,
 }
 
 impl MainScenario {
@@ -55,16 +53,18 @@ impl MainScenario {
         )
         .into_shareable();
         scene.add(cube.clone());
+        let scene_elements = SceneElements { camera, scene };
         Self {
             cube,
-            scene,
-            camera,
+            scene_elements,
         }
     }
 }
 
 impl Scenario for MainScenario {
-    gen_camera_scene!(camera, scene);
+    fn scene_elements_mut(&mut self) -> &mut SceneElements {
+        &mut self.scene_elements
+    }
 
     fn on_update(&mut self, update_context: &RenderContext) {
         let update_interval = update_context.render_interval;

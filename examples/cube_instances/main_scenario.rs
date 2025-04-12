@@ -28,10 +28,9 @@ use std::rc::Rc;
 use cgmath::Rotation3;
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
-use wgpu_lite_wrapper::gen_camera_scene;
 use wgpu_lite_wrapper::primitives::cube::CubeOptions;
 use wgpu_lite_wrapper::primitives::{Object3DInstanceGroup, Shareable, cube};
-use wgpu_lite_wrapper::scenario::{RenderContext, Scenario};
+use wgpu_lite_wrapper::scenario::{RenderContext, Scenario, SceneElements};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
 const DEFAULT_SHADER: &str = include_str!("cube_instances.wgsl");
@@ -41,8 +40,7 @@ const CUBE_OFFSET: f32 = 2.0;
 
 pub struct MainScenario {
     pub cube: Rc<RefCell<Object3DInstanceGroup>>,
-    pub scene: Scene3D,
-    pub camera: WinitCameraAdapter,
+    pub scene_elements: SceneElements,
 }
 
 impl MainScenario {
@@ -80,16 +78,18 @@ impl MainScenario {
             cube_init.into_shareable()
         };
         scene.add(cube.clone());
+        let scene_elements = SceneElements { camera, scene };
         Self {
             cube,
-            scene,
-            camera,
+            scene_elements,
         }
     }
 }
 
 impl Scenario for MainScenario {
-    gen_camera_scene!(camera, scene);
+    fn scene_elements_mut(&mut self) -> &mut SceneElements {
+        &mut self.scene_elements
+    }
 
     #[allow(clippy::cast_precision_loss)]
     fn on_update(&mut self, render_context: &RenderContext) {

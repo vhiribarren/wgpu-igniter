@@ -62,17 +62,20 @@ pub trait WinitEventLoopHandler {
     }
 }
 
+pub struct SceneElements {
+    pub camera: WinitCameraAdapter,
+    pub scene: Scene3D,
+}
+
 pub trait Scenario {
-    // NOTE maybe I should just return one struct, having both camera and scene, it will halve those methods, and maybe help me managing split borrow between camera and scene
-    fn camera(&self) -> &WinitCameraAdapter;
-    fn camera_mut(&mut self) -> &mut WinitCameraAdapter;
-    fn scene(&self) -> &Scene3D;
-    fn scene_mut(&mut self) -> &mut Scene3D;
+    fn scene_elements_mut(&mut self) -> &mut SceneElements;
     fn on_mouse_event(&mut self, event: &DeviceEvent) {
-        self.camera_mut().mouse_event_listener(event);
+        self.scene_elements_mut().camera.mouse_event_listener(event);
     }
     fn on_keyboard_event(&mut self, event: &KeyEvent) {
-        self.camera_mut().keyboard_event_listener(event);
+        self.scene_elements_mut()
+            .camera
+            .keyboard_event_listener(event);
     }
     fn on_window_event(&mut self, _event: &WindowEvent) -> EventResponse {
         EventResponse::default()
@@ -85,24 +88,6 @@ pub trait Scenario {
         _render_pass: &mut wgpu::RenderPass<'static>,
     ) {
     }
-}
-
-#[macro_export]
-macro_rules! gen_camera_scene {
-    ($camera:ident, $scene:ident) => {
-        fn camera(&self) -> &WinitCameraAdapter {
-            &self.$camera
-        }
-        fn camera_mut(&mut self) -> &mut WinitCameraAdapter {
-            &mut self.$camera
-        }
-        fn scene(&self) -> &Scene3D {
-            &self.$scene
-        }
-        fn scene_mut(&mut self) -> &mut Scene3D {
-            &mut self.$scene
-        }
-    };
 }
 
 pub struct ScenarioScheduler {
@@ -125,7 +110,10 @@ impl WinitEventLoopHandler for ScenarioScheduler {
     }
 
     fn on_keyboard_event(&mut self, event: &KeyEvent) {
-        self.scenario.camera_mut().keyboard_event_listener(event);
+        self.scenario
+            .scene_elements_mut()
+            .camera
+            .keyboard_event_listener(event);
     }
 
     fn on_window_event(&mut self, event: &WindowEvent) -> EventResponse {
@@ -133,15 +121,26 @@ impl WinitEventLoopHandler for ScenarioScheduler {
     }
 
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
-        self.scenario.camera_mut().update();
-        // TODO Should I keep the clone, or regorganize the code?
-        let scenario = &*self.scenario;
-        let camera = scenario.camera().camera.clone();
-        let scene = self.scenario.scene_mut();
-        scene.update(render_context, &camera);
+        /*
+        self.scenario.scene_elements_mut().camera.update();
+        let scenario = &mut *self.scenario;
+        let SceneElements { camera, scene } = scenario.scene_elements_mut();
+        scene.update(render_context, &camera.camera);
         let mut rpass = render_pass.forget_lifetime();
-        let scenario = self.scenario.as_mut();
-        scenario.scene().render(&mut rpass);
+        scene.render(&mut rpass);
+        scenario.on_post_render(render_context, &mut rpass);
+        */
+
+        let scenario = &mut *self.scenario;
+        let elements = scenario.scene_elements_mut();
+
+        elements.camera.update();
+        elements
+            .scene
+            .update(render_context, &elements.camera.camera);
+
+        let mut rpass = render_pass.forget_lifetime();
+        elements.scene.render(&mut rpass);
         scenario.on_post_render(render_context, &mut rpass);
     }
 }

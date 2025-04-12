@@ -27,10 +27,9 @@ use std::rc::Rc;
 
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
-use wgpu_lite_wrapper::gen_camera_scene;
 use wgpu_lite_wrapper::primitives::cube::CubeOptions;
 use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::scenario::{RenderContext, Scenario};
+use wgpu_lite_wrapper::scenario::{RenderContext, Scenario, SceneElements};
 
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
@@ -52,8 +51,7 @@ const SHADER_TRANSITION_PERIOD: Duration = Duration::from_secs(1);
 pub struct MainScenario {
     pub cube_interpolated: Rc<RefCell<Object3D>>,
     pub cube_flat: Rc<RefCell<Object3D>>,
-    pub scene: Scene3D,
-    pub camera: WinitCameraAdapter,
+    pub scene_elements: SceneElements,
 }
 
 impl MainScenario {
@@ -84,17 +82,20 @@ impl MainScenario {
 
         scene.add(cube_interpolated.clone());
         scene.add(cube_flat.clone());
+
+        let scene_elements = SceneElements { camera, scene };
         Self {
             cube_interpolated,
             cube_flat,
-            scene,
-            camera,
+            scene_elements,
         }
     }
 }
 
 impl Scenario for MainScenario {
-    gen_camera_scene!(camera, scene);
+    fn scene_elements_mut(&mut self) -> &mut SceneElements {
+        &mut self.scene_elements
+    }
 
     fn on_update(&mut self, update_context: &RenderContext) {
         let update_interval = update_context.render_interval;

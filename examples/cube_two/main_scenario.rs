@@ -27,9 +27,8 @@ use std::rc::Rc;
 
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
-use wgpu_lite_wrapper::gen_camera_scene;
 use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::scenario::Scenario;
+use wgpu_lite_wrapper::scenario::{Scenario, SceneElements};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 
 const INTERPOLATED_SHADER: &str = include_str!(concat!(
@@ -47,8 +46,7 @@ const ROTATION_DEG_PER_S: f32 = 45.0;
 pub struct MainScenario {
     cube_left: Rc<RefCell<Object3D>>,
     cube_right: Rc<RefCell<Object3D>>,
-    scene: Scene3D,
-    camera: WinitCameraAdapter,
+    scene_elements: SceneElements,
 }
 
 impl MainScenario {
@@ -86,17 +84,19 @@ impl MainScenario {
         scene.add(cube_left.clone());
         scene.add(cube_right.clone());
 
+        let scene_elements = SceneElements { camera, scene };
         Self {
             cube_left,
             cube_right,
-            scene,
-            camera,
+            scene_elements,
         }
     }
 }
 
 impl Scenario for MainScenario {
-    gen_camera_scene!(camera, scene);
+    fn scene_elements_mut(&mut self) -> &mut SceneElements {
+        &mut self.scene_elements
+    }
 
     fn on_update(&mut self, update_context: &wgpu_lite_wrapper::scenario::RenderContext) {
         let delta_rotation = ROTATION_DEG_PER_S

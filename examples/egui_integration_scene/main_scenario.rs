@@ -27,10 +27,9 @@ use std::rc::Rc;
 use egui_winit::EventResponse;
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
-use wgpu_lite_wrapper::gen_camera_scene;
 use wgpu_lite_wrapper::primitives::cube::CubeOptions;
 use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::scenario::{RenderContext, Scenario};
+use wgpu_lite_wrapper::scenario::{RenderContext, Scenario, SceneElements};
 use wgpu_lite_wrapper::scene::{Scene, Scene3D};
 use wgpu_lite_wrapper::support::egui::EguiSupport;
 use winit::event::DeviceEvent;
@@ -63,8 +62,7 @@ impl GuiState {
 
 pub struct MainScenario {
     cube: Rc<std::cell::RefCell<Object3D>>,
-    scene: Scene3D,
-    camera: WinitCameraAdapter,
+    scene_elements: SceneElements,
     egui_support: EguiSupport,
     gui_state: GuiState,
 }
@@ -88,10 +86,11 @@ impl MainScenario {
         )
         .into_shareable();
         scene.add(cube.clone());
+
+        let scene_elements = SceneElements { camera, scene };
         Self {
             cube,
-            scene,
-            camera,
+            scene_elements,
             egui_support,
             gui_state,
         }
@@ -99,7 +98,9 @@ impl MainScenario {
 }
 
 impl Scenario for MainScenario {
-    gen_camera_scene!(camera, scene);
+    fn scene_elements_mut(&mut self) -> &mut SceneElements {
+        &mut self.scene_elements
+    }
 
     fn on_update(&mut self, context: &RenderContext) {
         let total_seconds = context
@@ -128,7 +129,7 @@ impl Scenario for MainScenario {
         if self.egui_support.egui_context().is_using_pointer() {
             return;
         }
-        self.camera_mut().mouse_event_listener(event);
+        self.scene_elements_mut().camera.mouse_event_listener(event);
     }
 
     fn on_post_render(
