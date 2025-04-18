@@ -33,7 +33,7 @@ use crate::draw_context::IndexData;
 use crate::draw_context::Uniform;
 use crate::primitives::Object3D;
 use crate::primitives::color;
-use crate::scene::Scene3DUniforms;
+use crate::scene_3d::Scene3DUniforms;
 
 use super::Object3DInstanceGroup;
 use super::Object3DInstanceGroupHandlers;

@@ -29,7 +29,7 @@ use wgpu_lite_wrapper::draw_context::{
 use wgpu_lite_wrapper::primitives::triangle::{
     TRIANGLE_COLOR, TRIANGLE_GEOMETRY, TRIANGLE_VERTEX_COUNT,
 };
-use wgpu_lite_wrapper::scenario::{RenderContext, WinitEventLoopHandler};
+use wgpu_lite_wrapper::render_loop::{RenderContext, RenderLoopHandler};
 
 const DEFAULT_SHADER: &str = include_str!("./triangle_direct.wgsl");
 
@@ -77,13 +77,9 @@ impl MainScenario {
     }
 }
 
-impl WinitEventLoopHandler for MainScenario {
+impl RenderLoopHandler for MainScenario {
     fn on_render(&mut self, render_context: &RenderContext, mut render_pass: wgpu::RenderPass<'_>) {
-        let total_seconds = render_context
-            .render_interval
-            .scenario_start
-            .elapsed()
-            .as_secs_f32();
+        let total_seconds = render_context.time_info.init_start.elapsed().as_secs_f32();
         let new_rotation = ROTATION_DEG_PER_S * total_seconds;
         let transform: cgmath::Matrix4<f32> = cgmath::Matrix4::from_scale(0.5)
             * cgmath::Matrix4::from_angle_z(cgmath::Deg(new_rotation));

@@ -30,8 +30,8 @@ use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::primitives::cube::CubeOptions;
 use wgpu_lite_wrapper::primitives::{Object3DInstanceGroup, Shareable, cube};
-use wgpu_lite_wrapper::scenario::{RenderContext, Scenario, SceneElements};
-use wgpu_lite_wrapper::scene::{Scene, Scene3D};
+use wgpu_lite_wrapper::render_loop::{RenderContext, SceneElements, SceneLoopHandler};
+use wgpu_lite_wrapper::scene_3d::Scene3D;
 
 const DEFAULT_SHADER: &str = include_str!("cube_instances.wgsl");
 const CUBE_WIDTH_COUNT: usize = 50;
@@ -86,7 +86,7 @@ impl MainScenario {
     }
 }
 
-impl Scenario for MainScenario {
+impl SceneLoopHandler for MainScenario {
     fn scene_elements_mut(&mut self) -> &mut SceneElements {
         &mut self.scene_elements
     }
@@ -94,7 +94,8 @@ impl Scenario for MainScenario {
     #[allow(clippy::cast_precision_loss)]
     fn on_update(&mut self, render_context: &RenderContext) {
         let &RenderContext {
-            render_interval, ..
+            time_info: render_interval,
+            ..
         } = render_context;
         let delta = render_interval.processing_delta.as_secs_f32();
         self.cube

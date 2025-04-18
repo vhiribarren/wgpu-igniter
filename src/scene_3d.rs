@@ -29,20 +29,10 @@ use cgmath::{SquareMatrix, Zero};
 use crate::{
     cameras::Camera,
     draw_context::{DrawContext, Drawable, Uniform},
-    scenario::RenderContext,
+    render_loop::RenderContext,
 };
 
 pub type DrawableWrapper = Rc<RefCell<dyn AsRef<Drawable>>>;
-
-pub trait Scene {
-    fn add(&mut self, element: DrawableWrapper);
-    fn drawables(&self) -> &[DrawableWrapper];
-    fn render(&self, render_pass: &mut wgpu::RenderPass<'_>) {
-        for drawable in self.drawables() {
-            drawable.borrow().as_ref().render(render_pass);
-        }
-    }
-}
 
 #[allow(clippy::manual_non_exhaustive)]
 pub struct Scene3DUniforms {
@@ -93,13 +83,18 @@ impl Scene3D {
             .camera_pos
             .write_uniform(camera_data.position.into());
     }
-}
 
-impl Scene for Scene3D {
-    fn add(&mut self, element: DrawableWrapper) {
+    pub fn add(&mut self, element: DrawableWrapper) {
         self.drawables.push(element);
     }
-    fn drawables(&self) -> &[DrawableWrapper] {
+
+    pub fn drawables(&self) -> &[DrawableWrapper] {
         &self.drawables
+    }
+
+    pub fn render(&self, render_pass: &mut wgpu::RenderPass<'_>) {
+        for drawable in self.drawables() {
+            drawable.borrow().as_ref().render(render_pass);
+        }
     }
 }

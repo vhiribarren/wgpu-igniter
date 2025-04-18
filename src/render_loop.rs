@@ -22,35 +22,31 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use crate::{
-    cameras::WinitCameraAdapter,
-    draw_context::DrawContext,
-    scene::{Scene, Scene3D},
-};
+use crate::{cameras::WinitCameraAdapter, draw_context::DrawContext, scene_3d::Scene3D};
 use egui_winit::EventResponse;
 use web_time::{Duration, Instant};
 use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
 
-pub struct ProcessingInterval {
-    pub scenario_start: Instant,
+pub struct TimeInfo {
+    pub init_start: Instant,
     pub processing_delta: Duration,
 }
 
-impl Default for ProcessingInterval {
+impl Default for TimeInfo {
     fn default() -> Self {
         Self {
-            scenario_start: Instant::now(),
+            init_start: Instant::now(),
             processing_delta: Duration::new(0, 0),
         }
     }
 }
 
 pub struct RenderContext<'a> {
-    pub render_interval: &'a ProcessingInterval,
+    pub time_info: &'a TimeInfo,
     pub draw_context: &'a DrawContext,
 }
 
-pub trait WinitEventLoopHandler {
+pub trait RenderLoopHandler {
     fn on_mouse_event(&mut self, _event: &DeviceEvent) {}
     fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
     fn on_window_event(&mut self, _event: &WindowEvent) -> EventResponse {
@@ -67,7 +63,7 @@ pub struct SceneElements {
     pub scene: Scene3D,
 }
 
-pub trait Scenario {
+pub trait SceneLoopHandler {
     fn scene_elements_mut(&mut self) -> &mut SceneElements;
     fn on_mouse_event(&mut self, event: &DeviceEvent) {
         self.scene_elements_mut().camera.mouse_event_listener(event);
@@ -90,57 +86,43 @@ pub trait Scenario {
     }
 }
 
-pub struct ScenarioScheduler {
-    scenario: Box<dyn Scenario>,
+pub type RenderLoopBuilder = dyn Fn(&mut DrawContext) -> Box<dyn RenderLoopHandler>;
+
+pub struct SceneLoopScheduler {
+    scene_loop_handler: Box<dyn SceneLoopHandler>,
 }
 
-pub type WinitEventLoopBuilder = dyn Fn(&mut DrawContext) -> Box<dyn WinitEventLoopHandler>;
-
-impl ScenarioScheduler {
-    pub fn run(scenario: impl Scenario + 'static) -> Box<dyn WinitEventLoopHandler> {
+impl SceneLoopScheduler {
+    pub fn run(scene_loop_handler: impl SceneLoopHandler + 'static) -> Box<dyn RenderLoopHandler> {
         Box::new(Self {
-            scenario: Box::new(scenario),
+            scene_loop_handler: Box::new(scene_loop_handler),
         })
     }
 }
 
-impl WinitEventLoopHandler for ScenarioScheduler {
+impl RenderLoopHandler for SceneLoopScheduler {
     fn on_mouse_event(&mut self, event: &DeviceEvent) {
-        self.scenario.on_mouse_event(event);
+        self.scene_loop_handler.on_mouse_event(event);
     }
 
     fn on_keyboard_event(&mut self, event: &KeyEvent) {
-        self.scenario
+        self.scene_loop_handler
             .scene_elements_mut()
             .camera
             .keyboard_event_listener(event);
     }
 
     fn on_window_event(&mut self, event: &WindowEvent) -> EventResponse {
-        self.scenario.on_window_event(event)
+        self.scene_loop_handler.on_window_event(event)
     }
 
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
-        /*
-        self.scenario.scene_elements_mut().camera.update();
-        let scenario = &mut *self.scenario;
+        let mut rpass = render_pass.forget_lifetime();
+        let scenario = &mut *self.scene_loop_handler;
         let SceneElements { camera, scene } = scenario.scene_elements_mut();
+        camera.update();
         scene.update(render_context, &camera.camera);
-        let mut rpass = render_pass.forget_lifetime();
         scene.render(&mut rpass);
-        scenario.on_post_render(render_context, &mut rpass);
-        */
-
-        let scenario = &mut *self.scenario;
-        let elements = scenario.scene_elements_mut();
-
-        elements.camera.update();
-        elements
-            .scene
-            .update(render_context, &elements.camera.camera);
-
-        let mut rpass = render_pass.forget_lifetime();
-        elements.scene.render(&mut rpass);
         scenario.on_post_render(render_context, &mut rpass);
     }
 }

@@ -29,9 +29,9 @@ use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::primitives::cube::CubeOptions;
 use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::scenario::{RenderContext, Scenario, SceneElements};
+use wgpu_lite_wrapper::render_loop::{RenderContext, SceneElements, SceneLoopHandler};
 
-use wgpu_lite_wrapper::scene::{Scene, Scene3D};
+use wgpu_lite_wrapper::scene_3d::Scene3D;
 
 use web_time::Duration;
 
@@ -92,13 +92,13 @@ impl MainScenario {
     }
 }
 
-impl Scenario for MainScenario {
+impl SceneLoopHandler for MainScenario {
     fn scene_elements_mut(&mut self) -> &mut SceneElements {
         &mut self.scene_elements
     }
 
     fn on_update(&mut self, update_context: &RenderContext) {
-        let update_interval = update_context.render_interval;
+        let update_interval = update_context.time_info;
         let delta_rotation = ROTATION_DEG_PER_S * update_interval.processing_delta.as_secs_f32();
         let transform = cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation))
             * cgmath::Matrix4::from_angle_y(cgmath::Deg(delta_rotation));
@@ -110,7 +110,7 @@ impl Scenario for MainScenario {
             cube_flat.apply_transform(transform);
             cube_flat.set_opacity(
                 0.5 + f32::sin(
-                    2. * update_interval.scenario_start.elapsed().as_secs_f32()
+                    2. * update_interval.init_start.elapsed().as_secs_f32()
                         / SHADER_TRANSITION_PERIOD.as_secs_f32(),
                 ) / 2_f32,
             );

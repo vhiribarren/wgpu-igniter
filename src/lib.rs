@@ -26,8 +26,8 @@ pub mod cameras;
 pub mod draw_context;
 pub mod launcher;
 pub mod primitives;
-pub mod scenario;
-pub mod scene;
+pub mod render_loop;
+pub mod scene_3d;
 pub mod support;
 pub mod window;
 

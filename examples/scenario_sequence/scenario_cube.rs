@@ -27,8 +27,8 @@ use std::rc::Rc;
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::scenario::{RenderContext, Scenario, SceneElements};
-use wgpu_lite_wrapper::scene::{Scene, Scene3D};
+use wgpu_lite_wrapper::render_loop::{RenderContext, SceneElements, SceneLoopHandler};
+use wgpu_lite_wrapper::scene_3d::Scene3D;
 
 const DEFAULT_SHADER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -64,17 +64,13 @@ impl MainScenario {
     }
 }
 
-impl Scenario for MainScenario {
+impl SceneLoopHandler for MainScenario {
     fn scene_elements_mut(&mut self) -> &mut SceneElements {
         &mut self.scene_elements
     }
 
     fn on_update(&mut self, context: &RenderContext) {
-        let total_seconds = context
-            .render_interval
-            .scenario_start
-            .elapsed()
-            .as_secs_f32();
+        let total_seconds = context.time_info.init_start.elapsed().as_secs_f32();
         let new_rotation = ROTATION_DEG_PER_S * total_seconds;
         // Translation on z to be in the clipped space (between -w and w) and camera in front of the cube
         let z_translation: cgmath::Matrix4<f32> =

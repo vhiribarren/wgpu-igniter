@@ -28,24 +28,24 @@ use chrono::Duration;
 use log::debug;
 use wgpu_lite_wrapper::{
     draw_context::DrawContext,
-    scenario::{RenderContext, ScenarioScheduler, WinitEventLoopHandler},
+    render_loop::{RenderContext, RenderLoopHandler, SceneLoopScheduler},
 };
 
 use crate::{scenario_cube, scenario_triangle};
 
 enum ScenarioDescription {
     WithDuration {
-        scenario: Box<dyn WinitEventLoopHandler>,
+        scenario: Box<dyn RenderLoopHandler>,
         duration: Duration,
     },
     #[allow(dead_code)]
     WithTermination {
-        scenario: Box<dyn WinitEventLoopHandler>,
+        scenario: Box<dyn RenderLoopHandler>,
     },
 }
 
 impl ScenarioDescription {
-    pub fn get_scenario_mut(&mut self) -> &mut Box<dyn WinitEventLoopHandler> {
+    pub fn get_scenario_mut(&mut self) -> &mut Box<dyn RenderLoopHandler> {
         match self {
             ScenarioDescription::WithDuration { scenario, .. } => scenario,
             ScenarioDescription::WithTermination { scenario } => scenario,
@@ -68,7 +68,7 @@ impl MainScenario {
                 duration: Duration::seconds(5),
             },
             ScenarioDescription::WithDuration {
-                scenario: ScenarioScheduler::run(scenario_cube::MainScenario::new(draw_context)),
+                scenario: SceneLoopScheduler::run(scenario_cube::MainScenario::new(draw_context)),
                 duration: Duration::seconds(5),
             },
         ];
@@ -110,7 +110,7 @@ impl MainScenario {
     }
 }
 
-impl WinitEventLoopHandler for MainScenario {
+impl RenderLoopHandler for MainScenario {
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
         self.progress_scenario();
         if self.is_finished() {

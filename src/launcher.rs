@@ -27,7 +27,7 @@ use std::env;
 
 use crate::{
     draw_context::DrawContext,
-    scenario::{WinitEventLoopBuilder, WinitEventLoopHandler},
+    render_loop::{RenderLoopBuilder, RenderLoopHandler},
     window::init_event_loop,
 };
 
@@ -36,7 +36,7 @@ const ENV_HEADLESS: &str = "HEADLESS";
 
 pub fn launch_app<F>(builder: F)
 where
-    F: Fn(&mut DrawContext) -> Box<dyn WinitEventLoopHandler> + 'static,
+    F: Fn(&mut DrawContext) -> Box<dyn RenderLoopHandler> + 'static,
 {
     init_log();
     info!("Init app");
@@ -85,15 +85,15 @@ fn init_log() {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn init_headless(builder: Box<WinitEventLoopBuilder>) {
+fn init_headless(builder: Box<RenderLoopBuilder>) {
     use pollster::FutureExt;
 
-    use crate::scenario::RenderContext;
+    use crate::render_loop::RenderContext;
     let draw_context = &mut DrawContext::new(None, None).block_on().unwrap();
     let mut scene_handler = builder(draw_context);
     // NOTE I do not like this circular dependency on context
     let render_context = RenderContext {
-        render_interval: &Default::default(),
+        time_info: &Default::default(),
         draw_context,
     };
     draw_context
@@ -102,6 +102,6 @@ fn init_headless(builder: Box<WinitEventLoopBuilder>) {
 }
 
 #[cfg(target_arch = "wasm32")]
-fn init_headless(_builder: Box<WinitEventLoopBuilder>) {
+fn init_headless(_builder: Box<RenderLoopBuilder>) {
     todo!("Headless mode is not supported in WASM");
 }

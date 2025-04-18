@@ -32,9 +32,7 @@ use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy}
 use winit::window::{CursorIcon, Window, WindowId};
 
 use crate::draw_context::{self, Dimensions, DrawContext};
-use crate::scenario::{
-    ProcessingInterval, RenderContext, WinitEventLoopBuilder, WinitEventLoopHandler,
-};
+use crate::render_loop::{RenderContext, RenderLoopBuilder, RenderLoopHandler, TimeInfo};
 use log::{debug, info};
 
 #[cfg(target_arch = "wasm32")]
@@ -99,14 +97,14 @@ struct App {
     last_fps_instant: Instant,
     draw_period_target: Duration,
     draw_context: DrawContext,
-    scenario: Box<dyn WinitEventLoopHandler>,
+    scenario: Box<dyn RenderLoopHandler>,
 }
 
 impl App {
     async fn async_new(
         window: Window,
         dimensions: Option<Dimensions>,
-        builder: Box<WinitEventLoopBuilder>,
+        builder: Box<RenderLoopBuilder>,
     ) -> Self {
         let window = Arc::new(window);
         let mouse_state = MouseState::new();
@@ -133,13 +131,13 @@ impl App {
 }
 
 struct AppHandlerState {
-    builder: Option<Box<WinitEventLoopBuilder>>,
+    builder: Option<Box<RenderLoopBuilder>>,
     state: Option<App>,
     event_loop_proxy: Option<EventLoopProxy<App>>,
 }
 
 impl AppHandlerState {
-    fn new(event_loop: &EventLoop<App>, builder: Box<WinitEventLoopBuilder>) -> Self {
+    fn new(event_loop: &EventLoop<App>, builder: Box<RenderLoopBuilder>) -> Self {
         Self {
             builder: Some(builder),
             state: None,
@@ -251,8 +249,8 @@ impl ApplicationHandler<App> for AppHandlerState {
                 };
                 let render_context = &RenderContext {
                     draw_context: &app.draw_context,
-                    render_interval: &ProcessingInterval {
-                        scenario_start: app.scenario_start,
+                    time_info: &TimeInfo {
+                        init_start: app.scenario_start,
                         processing_delta: draw_delta,
                     },
                 };
@@ -301,7 +299,7 @@ impl ApplicationHandler<App> for AppHandlerState {
     }
 }
 
-pub(crate) fn init_event_loop(builder: Box<WinitEventLoopBuilder>) {
+pub(crate) fn init_event_loop(builder: Box<RenderLoopBuilder>) {
     let event_loop = EventLoop::with_user_event().build().unwrap();
     event_loop.set_control_flow(ControlFlow::Poll);
     let app_handler_state = &mut AppHandlerState::new(&event_loop, builder);

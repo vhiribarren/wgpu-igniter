@@ -28,8 +28,8 @@ use std::rc::Rc;
 use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
 use wgpu_lite_wrapper::draw_context::DrawContext;
 use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::scenario::{Scenario, SceneElements};
-use wgpu_lite_wrapper::scene::{Scene, Scene3D};
+use wgpu_lite_wrapper::render_loop::{SceneElements, SceneLoopHandler};
+use wgpu_lite_wrapper::scene_3d::Scene3D;
 
 const INTERPOLATED_SHADER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -93,17 +93,14 @@ impl MainScenario {
     }
 }
 
-impl Scenario for MainScenario {
+impl SceneLoopHandler for MainScenario {
     fn scene_elements_mut(&mut self) -> &mut SceneElements {
         &mut self.scene_elements
     }
 
-    fn on_update(&mut self, update_context: &wgpu_lite_wrapper::scenario::RenderContext) {
-        let delta_rotation = ROTATION_DEG_PER_S
-            * update_context
-                .render_interval
-                .processing_delta
-                .as_secs_f32();
+    fn on_update(&mut self, update_context: &wgpu_lite_wrapper::render_loop::RenderContext) {
+        let delta_rotation =
+            ROTATION_DEG_PER_S * update_context.time_info.processing_delta.as_secs_f32();
         self.cube_left
             .borrow_mut()
             .apply_transform(cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation)));

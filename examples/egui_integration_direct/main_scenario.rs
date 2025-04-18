@@ -26,7 +26,7 @@ use egui_winit::EventResponse;
 use wgpu_lite_wrapper::draw_context::{
     DrawContext, DrawModeParams, Drawable, DrawableBuilder, Uniform,
 };
-use wgpu_lite_wrapper::scenario::{RenderContext, WinitEventLoopHandler};
+use wgpu_lite_wrapper::render_loop::{RenderContext, RenderLoopHandler};
 use wgpu_lite_wrapper::support::egui::EguiSupport;
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");
@@ -82,19 +82,19 @@ impl MainScenario {
     }
 }
 
-impl WinitEventLoopHandler for MainScenario {
+impl RenderLoopHandler for MainScenario {
     fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventResponse {
         self.egui_support.on_window_event(event)
     }
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
         let &RenderContext {
-            render_interval: update_interval,
+            time_info: update_interval,
             draw_context,
         } = render_context;
         self.egui_support
             .set_pixels_per_point(self.gui_state.pixels_per_point);
         self.time_uniform.write_uniform(
-            update_interval.scenario_start.elapsed().as_secs_f32() * self.gui_state.anim_speed,
+            update_interval.init_start.elapsed().as_secs_f32() * self.gui_state.anim_speed,
         );
 
         let mut rpass = render_pass.forget_lifetime();
