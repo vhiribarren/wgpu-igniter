@@ -23,13 +23,11 @@ SOFTWARE.
 */
 
 use cgmath::SquareMatrix;
-use wgpu_lite_wrapper::draw_context::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, Uniform,
-};
-use wgpu_lite_wrapper::primitives::triangle::{
+use wgpu_igniter::draw_context::{DrawContext, DrawModeParams, Drawable, DrawableBuilder, Uniform};
+use wgpu_igniter::primitives::triangle::{
     TRIANGLE_COLOR, TRIANGLE_GEOMETRY, TRIANGLE_VERTEX_COUNT,
 };
-use wgpu_lite_wrapper::render_loop::{RenderContext, RenderLoopHandler};
+use wgpu_igniter::render_loop::{RenderContext, RenderLoopHandler};
 
 const DEFAULT_SHADER: &str = include_str!("./triangle_direct.wgsl");
 

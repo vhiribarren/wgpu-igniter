@@ -2773,7 +2773,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "wgpu-lite-wrapper"
+name = "wgpu-igniter"
 version = "0.1.0"
 dependencies = [
  "anyhow",

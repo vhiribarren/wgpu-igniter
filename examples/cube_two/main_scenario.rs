@@ -25,11 +25,11 @@ SOFTWARE.
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
-use wgpu_lite_wrapper::draw_context::DrawContext;
-use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::render_loop::{SceneElements, SceneLoopHandler};
-use wgpu_lite_wrapper::scene_3d::Scene3D;
+use wgpu_igniter::cameras::{PerspectiveConfig, WinitCameraAdapter};
+use wgpu_igniter::draw_context::DrawContext;
+use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
+use wgpu_igniter::render_loop::{SceneElements, SceneLoopHandler};
+use wgpu_igniter::scene_3d::Scene3D;
 
 const INTERPOLATED_SHADER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -98,7 +98,7 @@ impl SceneLoopHandler for MainScenario {
         &mut self.scene_elements
     }
 
-    fn on_update(&mut self, update_context: &wgpu_lite_wrapper::render_loop::RenderContext) {
+    fn on_update(&mut self, update_context: &wgpu_igniter::render_loop::RenderContext) {
         let delta_rotation =
             ROTATION_DEG_PER_S * update_context.time_info.processing_delta.as_secs_f32();
         self.cube_left

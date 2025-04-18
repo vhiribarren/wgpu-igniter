@@ -1,4 +1,4 @@
-# wgpu lite wrapper
+# wgpu-igniter
 
 Hobby project to test the Rust programming language and WebGPU through wgpu.
 

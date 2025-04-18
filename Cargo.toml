@@ -1,9 +1,9 @@
 [package]
-name = "wgpu-lite-wrapper"
+name = "wgpu-igniter"
 version = "0.1.0"
 edition = "2024"
 license = "MIT"
-repository = "https://github.com/vhiribarren/wgpu-lite-wrapper"
+repository = "https://github.com/vhiribarren/wgpu-igniter"
 categories = ["graphics"]
 keywords = ["wgpu", "graphics", "webgpu"]
 description = "A lightweight wrapper around wgpu-rs to simplify the creation of 3D applications."

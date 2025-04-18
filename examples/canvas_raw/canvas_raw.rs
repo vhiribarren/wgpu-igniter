@@ -22,10 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use wgpu_lite_wrapper::draw_context::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, Uniform,
-};
-use wgpu_lite_wrapper::render_loop::{RenderContext, RenderLoopHandler};
+use wgpu_igniter::draw_context::{DrawContext, DrawModeParams, Drawable, DrawableBuilder, Uniform};
+use wgpu_igniter::render_loop::{RenderContext, RenderLoopHandler};
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./canvas_raw.wgsl");
 

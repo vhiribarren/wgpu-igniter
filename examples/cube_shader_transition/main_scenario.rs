@@ -25,13 +25,13 @@ SOFTWARE.
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use wgpu_lite_wrapper::cameras::{PerspectiveConfig, WinitCameraAdapter};
-use wgpu_lite_wrapper::draw_context::DrawContext;
-use wgpu_lite_wrapper::primitives::cube::CubeOptions;
-use wgpu_lite_wrapper::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_lite_wrapper::render_loop::{RenderContext, SceneElements, SceneLoopHandler};
+use wgpu_igniter::cameras::{PerspectiveConfig, WinitCameraAdapter};
+use wgpu_igniter::draw_context::DrawContext;
+use wgpu_igniter::primitives::cube::CubeOptions;
+use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
+use wgpu_igniter::render_loop::{RenderContext, SceneElements, SceneLoopHandler};
 
-use wgpu_lite_wrapper::scene_3d::Scene3D;
+use wgpu_igniter::scene_3d::Scene3D;
 
 use web_time::Duration;
 

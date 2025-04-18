@@ -26,7 +26,7 @@ use std::vec::IntoIter;
 
 use log::debug;
 use web_time::{Duration, Instant};
-use wgpu_lite_wrapper::{
+use wgpu_igniter::{
     draw_context::DrawContext,
     render_loop::{RenderContext, RenderLoopHandler, SceneLoopScheduler},
 };

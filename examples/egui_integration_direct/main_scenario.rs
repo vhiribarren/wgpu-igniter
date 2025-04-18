@@ -23,11 +23,9 @@ SOFTWARE.
 */
 
 use egui_winit::EventResponse;
-use wgpu_lite_wrapper::draw_context::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, Uniform,
-};
-use wgpu_lite_wrapper::render_loop::{RenderContext, RenderLoopHandler};
-use wgpu_lite_wrapper::support::egui::EguiSupport;
+use wgpu_igniter::draw_context::{DrawContext, DrawModeParams, Drawable, DrawableBuilder, Uniform};
+use wgpu_igniter::render_loop::{RenderContext, RenderLoopHandler};
+use wgpu_igniter::support::egui::EguiSupport;
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");
 

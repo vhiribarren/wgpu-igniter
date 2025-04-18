@@ -25,7 +25,7 @@ SOFTWARE.
 mod canvas_raw;
 
 use canvas_raw::MainScenario;
-use wgpu_lite_wrapper::launcher::launch_app;
+use wgpu_igniter::launcher::launch_app;
 
 fn main() {
     launch_app(|c| Box::new(MainScenario::new(c)));
