@@ -24,8 +24,8 @@ SOFTWARE.
 
 use std::vec::IntoIter;
 
-use chrono::Duration;
 use log::debug;
+use web_time::{Duration, Instant};
 use wgpu_lite_wrapper::{
     draw_context::DrawContext,
     render_loop::{RenderContext, RenderLoopHandler, SceneLoopScheduler},
@@ -56,7 +56,7 @@ impl ScenarioDescription {
 pub struct MainScenario {
     scenarios_iter: IntoIter<ScenarioDescription>,
     current_scenario: ScenarioDescription,
-    last_instant: chrono::DateTime<chrono::Utc>,
+    last_instant: Instant,
     end_flag: bool,
 }
 
@@ -65,16 +65,16 @@ impl MainScenario {
         let scenarios = vec![
             ScenarioDescription::WithDuration {
                 scenario: Box::new(scenario_triangle::MainScenario::new(draw_context)),
-                duration: Duration::seconds(5),
+                duration: Duration::from_secs(5),
             },
             ScenarioDescription::WithDuration {
                 scenario: SceneLoopScheduler::run(scenario_cube::MainScenario::new(draw_context)),
-                duration: Duration::seconds(5),
+                duration: Duration::from_secs(5),
             },
         ];
         let mut scenarios_iter = scenarios.into_iter();
         let current_scenario = scenarios_iter.next().unwrap();
-        let last_instant = chrono::Utc::now();
+        let last_instant = Instant::now();
         Self {
             scenarios_iter,
             current_scenario,
@@ -85,7 +85,7 @@ impl MainScenario {
     fn progress_scenario(&mut self) {
         match &self.current_scenario {
             ScenarioDescription::WithDuration { duration, .. } => {
-                let now = chrono::Utc::now();
+                let now = Instant::now();
                 if now - self.last_instant >= *duration {
                     self.last_instant = now;
                 } else {
@@ -94,7 +94,7 @@ impl MainScenario {
             }
             ScenarioDescription::WithTermination { scenario } => {
                 if scenario.is_finished() {
-                    self.last_instant = chrono::Utc::now();
+                    self.last_instant = Instant::now();
                 } else {
                     return;
                 }
