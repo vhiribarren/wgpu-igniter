@@ -95,6 +95,7 @@ fn init_headless(builder: Box<RenderLoopBuilder>) {
     let render_context = RenderContext {
         time_info: &Default::default(),
         draw_context,
+        _private: (),
     };
     draw_context
         .render_scene(|pass| scene_handler.on_render(&render_context, pass))

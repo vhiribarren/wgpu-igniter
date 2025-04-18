@@ -22,14 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use crate::{cameras::WinitCameraAdapter, draw_context::DrawContext, scene_3d::Scene3D};
+use crate::draw_context::DrawContext;
 use egui_winit::EventResponse;
 use web_time::{Duration, Instant};
 use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
 
+#[allow(clippy::manual_non_exhaustive)]
 pub struct TimeInfo {
     pub init_start: Instant,
     pub processing_delta: Duration,
+    pub(crate) _private: (),
 }
 
 impl Default for TimeInfo {
@@ -37,18 +39,22 @@ impl Default for TimeInfo {
         Self {
             init_start: Instant::now(),
             processing_delta: Duration::new(0, 0),
+            _private: (),
         }
     }
 }
 
+#[allow(clippy::manual_non_exhaustive)]
 pub struct RenderContext<'a> {
     pub time_info: &'a TimeInfo,
     pub draw_context: &'a DrawContext,
+    pub(crate) _private: (),
 }
 
 pub trait RenderLoopHandler {
     fn on_mouse_event(&mut self, _event: &DeviceEvent) {}
     fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
+    // FIXME There should not be a dependency on egui_winit here!!!
     fn on_window_event(&mut self, _event: &WindowEvent) -> EventResponse {
         EventResponse::default()
     }
@@ -58,72 +64,4 @@ pub trait RenderLoopHandler {
     }
 }
 
-pub struct SceneElements {
-    pub camera: WinitCameraAdapter,
-    pub scene: Scene3D,
-}
-
-pub trait SceneLoopHandler {
-    fn scene_elements_mut(&mut self) -> &mut SceneElements;
-    fn on_mouse_event(&mut self, event: &DeviceEvent) {
-        self.scene_elements_mut().camera.mouse_event_listener(event);
-    }
-    fn on_keyboard_event(&mut self, event: &KeyEvent) {
-        self.scene_elements_mut()
-            .camera
-            .keyboard_event_listener(event);
-    }
-    fn on_window_event(&mut self, _event: &WindowEvent) -> EventResponse {
-        EventResponse::default()
-    }
-    fn on_resize(&mut self, _draw_context: &DrawContext) {}
-    fn on_update(&mut self, update_context: &RenderContext);
-    fn on_post_render(
-        &mut self,
-        _render_context: &RenderContext,
-        _render_pass: &mut wgpu::RenderPass<'static>,
-    ) {
-    }
-}
-
 pub type RenderLoopBuilder = dyn Fn(&mut DrawContext) -> Box<dyn RenderLoopHandler>;
-
-pub struct SceneLoopScheduler {
-    scene_loop_handler: Box<dyn SceneLoopHandler>,
-}
-
-impl SceneLoopScheduler {
-    pub fn run(scene_loop_handler: impl SceneLoopHandler + 'static) -> Box<dyn RenderLoopHandler> {
-        Box::new(Self {
-            scene_loop_handler: Box::new(scene_loop_handler),
-        })
-    }
-}
-
-impl RenderLoopHandler for SceneLoopScheduler {
-    fn on_mouse_event(&mut self, event: &DeviceEvent) {
-        self.scene_loop_handler.on_mouse_event(event);
-    }
-
-    fn on_keyboard_event(&mut self, event: &KeyEvent) {
-        self.scene_loop_handler
-            .scene_elements_mut()
-            .camera
-            .keyboard_event_listener(event);
-    }
-
-    fn on_window_event(&mut self, event: &WindowEvent) -> EventResponse {
-        self.scene_loop_handler.on_window_event(event)
-    }
-
-    fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
-        let scenario = &mut *self.scene_loop_handler;
-        scenario.on_update(render_context);
-        let SceneElements { camera, scene } = scenario.scene_elements_mut();
-        let mut rpass = render_pass.forget_lifetime();
-        camera.update();
-        scene.update(render_context, &camera.camera);
-        scene.render(&mut rpass);
-        scenario.on_post_render(render_context, &mut rpass);
-    }
-}

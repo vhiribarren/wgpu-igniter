@@ -180,21 +180,21 @@ impl Camera {
     }
 }
 
-pub struct WinitCameraAdapter {
+pub struct InteractiveCamera {
     pub camera: Camera,
     enabled_keys: BTreeSet<KeyCode>,
     key_speed: f32,
     rotation_speed: f32,
 }
 
-impl WinitCameraAdapter {
+impl InteractiveCamera {
     const DEFAULT_KEY_SPEED: f32 = 0.03;
     const DEFAULT_ROTATION_SPEED: f32 = 1.0 / 500.0;
     const SPEED_MULTIPLICATOR: f32 = 10.0;
 
     #[must_use]
     pub fn new(camera: Camera) -> Self {
-        WinitCameraAdapter {
+        InteractiveCamera {
             camera,
             enabled_keys: BTreeSet::new(),
             key_speed: Self::DEFAULT_KEY_SPEED,
@@ -259,7 +259,7 @@ impl WinitCameraAdapter {
     }
 }
 
-impl AsRef<Camera> for WinitCameraAdapter {
+impl AsRef<Camera> for InteractiveCamera {
     fn as_ref(&self) -> &Camera {
         &self.camera
     }

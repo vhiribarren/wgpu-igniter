@@ -27,7 +27,7 @@ SOFTWARE.
 mod main_scenario;
 
 use main_scenario::MainScenario;
-use wgpu_igniter::{launcher::launch_app, render_loop::SceneLoopScheduler};
+use wgpu_igniter::{launch_app, scene_3d::SceneLoopScheduler};
 
 fn main() {
     launch_app(|c| SceneLoopScheduler::run(MainScenario::new(c)));

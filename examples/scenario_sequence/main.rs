@@ -27,7 +27,7 @@ mod scenario_cube;
 mod scenario_triangle;
 
 use main_scenario::MainScenario;
-use wgpu_igniter::launcher::launch_app;
+use wgpu_igniter::launch_app;
 
 fn main() {
     launch_app(|c| Box::new(MainScenario::new(c)));

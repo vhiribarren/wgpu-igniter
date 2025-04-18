@@ -26,10 +26,7 @@ use std::vec::IntoIter;
 
 use log::debug;
 use web_time::{Duration, Instant};
-use wgpu_igniter::{
-    draw_context::DrawContext,
-    render_loop::{RenderContext, RenderLoopHandler, SceneLoopScheduler},
-};
+use wgpu_igniter::{DrawContext, RenderContext, RenderLoopHandler, scene_3d::SceneLoopScheduler};
 
 use crate::{scenario_cube, scenario_triangle};
 

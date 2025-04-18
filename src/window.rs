@@ -22,18 +22,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+use crate::draw_context::{self, Dimensions, DrawContext};
+use crate::render_loop::{RenderContext, RenderLoopBuilder, RenderLoopHandler, TimeInfo};
+use log::{debug, info};
 use std::sync::Arc;
-
 use web_time::{Duration, Instant};
-
 use winit::application::ApplicationHandler;
 use winit::event::{DeviceEvent, ElementState, MouseButton, WindowEvent};
 use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
 use winit::window::{CursorIcon, Window, WindowId};
-
-use crate::draw_context::{self, Dimensions, DrawContext};
-use crate::render_loop::{RenderContext, RenderLoopBuilder, RenderLoopHandler, TimeInfo};
-use log::{debug, info};
 
 #[cfg(target_arch = "wasm32")]
 const WEBAPP_CANVAS_ID: &str = "target";
@@ -42,18 +39,18 @@ const TARGET_DRAW_FPS: f64 = 60.0;
 const TARGET_FPS_DISPLAY_PERIOD: Duration = Duration::from_secs(1);
 
 struct MouseState {
-    pub is_cursor_inside: bool,
+    is_cursor_inside: bool,
     mouse_rotation_enabled: bool,
 }
 
 impl MouseState {
-    pub fn new() -> Self {
+    fn new() -> Self {
         MouseState {
             is_cursor_inside: false,
             mouse_rotation_enabled: false,
         }
     }
-    pub fn left_button_action(&mut self, action: ElementState, window: &Window) {
+    fn left_button_action(&mut self, action: ElementState, window: &Window) {
         if !self.is_cursor_inside {
             return;
         }
@@ -73,18 +70,18 @@ impl MouseState {
         }
     }
 
-    pub fn resize_action(&mut self, window: &Window) {
+    fn resize_action(&mut self, window: &Window) {
         self.mouse_rotation_enabled = false;
         // FIXME disabled due to winit error when resizing in web context: already borrowed: BorrowMutError on window.set_cursor
         #[cfg(not(target_arch = "wasm32"))]
         window.set_cursor_visible(true);
     }
 
-    pub fn is_mouse_rotation_enabled(&self) -> bool {
+    fn is_mouse_rotation_enabled(&self) -> bool {
         self.mouse_rotation_enabled
     }
 
-    pub fn move_action(&mut self) {
+    fn move_action(&mut self) {
         self.mouse_rotation_enabled = false;
     }
 }
@@ -252,7 +249,9 @@ impl ApplicationHandler<App> for AppHandlerState {
                     time_info: &TimeInfo {
                         init_start: app.scenario_start,
                         processing_delta: draw_delta,
+                        _private: (),
                     },
+                    _private: (),
                 };
                 app.draw_context
                     .render_scene(|render_pass| app.scenario.on_render(render_context, render_pass))

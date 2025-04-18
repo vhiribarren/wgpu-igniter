@@ -22,14 +22,20 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+mod launcher;
+mod window;
+
+pub(crate) mod draw_context;
+pub(crate) mod render_loop;
+
 pub mod cameras;
-pub mod draw_context;
-pub mod launcher;
 pub mod primitives;
-pub mod render_loop;
 pub mod scene_3d;
 pub mod support;
-pub mod window;
+
+pub use draw_context::*;
+pub use launcher::launch_app;
+pub use render_loop::*;
 
 #[cfg(feature = "egui")]
 pub use egui;

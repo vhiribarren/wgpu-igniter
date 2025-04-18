@@ -22,16 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+use cgmath::Rotation3;
 use std::cell::RefCell;
 use std::rc::Rc;
-
-use cgmath::Rotation3;
-use wgpu_igniter::cameras::{PerspectiveConfig, WinitCameraAdapter};
-use wgpu_igniter::draw_context::DrawContext;
+use wgpu_igniter::cameras::{InteractiveCamera, PerspectiveConfig};
 use wgpu_igniter::primitives::cube::CubeOptions;
 use wgpu_igniter::primitives::{Object3DInstanceGroup, Shareable, cube};
-use wgpu_igniter::render_loop::{RenderContext, SceneElements, SceneLoopHandler};
-use wgpu_igniter::scene_3d::Scene3D;
+use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
+use wgpu_igniter::{DrawContext, RenderContext};
 
 const DEFAULT_SHADER: &str = include_str!("cube_instances.wgsl");
 const CUBE_WIDTH_COUNT: usize = 50;
@@ -48,7 +46,7 @@ impl MainScenario {
     #[allow(clippy::cast_precision_loss)]
     pub fn new(draw_context: &mut DrawContext) -> Self {
         draw_context.set_clear_color(Some(wgpu::Color::BLACK));
-        let camera = WinitCameraAdapter::new(PerspectiveConfig::default().into());
+        let camera = InteractiveCamera::new(PerspectiveConfig::default().into());
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut scene = Scene3D::new(draw_context);
         let cube = {

@@ -23,12 +23,10 @@ SOFTWARE.
 */
 
 use std::rc::Rc;
-
-use wgpu_igniter::cameras::{PerspectiveConfig, WinitCameraAdapter};
-use wgpu_igniter::draw_context::DrawContext;
+use wgpu_igniter::cameras::{InteractiveCamera, PerspectiveConfig};
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_igniter::render_loop::{RenderContext, SceneElements, SceneLoopHandler};
-use wgpu_igniter::scene_3d::Scene3D;
+use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
+use wgpu_igniter::{DrawContext, RenderContext};
 
 const DEFAULT_SHADER: &str = include_str!("cube_normals.wgsl");
 
@@ -41,7 +39,7 @@ pub struct MainScenario {
 
 impl MainScenario {
     pub fn new(draw_context: &DrawContext) -> Self {
-        let camera = WinitCameraAdapter::new(PerspectiveConfig::default().into());
+        let camera = InteractiveCamera::new(PerspectiveConfig::default().into());
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut scene = Scene3D::new(draw_context);
         let cube = cube::create_cube_with_normals(

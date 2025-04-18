@@ -22,15 +22,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use std::{cell::RefCell, rc::Rc};
-
-use cgmath::{SquareMatrix, Zero};
-
 use crate::{
-    cameras::Camera,
+    RenderLoopHandler,
+    cameras::{Camera, InteractiveCamera},
     draw_context::{DrawContext, Drawable, Uniform},
     render_loop::RenderContext,
 };
+use cgmath::{SquareMatrix, Zero};
+use egui_winit::EventResponse;
+use std::{cell::RefCell, rc::Rc};
+use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
 
 pub type DrawableWrapper = Rc<RefCell<dyn AsRef<Drawable>>>;
 
@@ -41,9 +42,11 @@ pub struct Scene3DUniforms {
     _private: (),
 }
 
+#[allow(clippy::manual_non_exhaustive)]
 pub struct CameraData {
     pub matrix: cgmath::Matrix4<f32>,
     pub position: cgmath::Point3<f32>,
+    _private: (),
 }
 
 pub struct Scene3D {
@@ -96,5 +99,74 @@ impl Scene3D {
         for drawable in self.drawables() {
             drawable.borrow().as_ref().render(render_pass);
         }
+    }
+}
+
+pub struct SceneElements {
+    pub camera: InteractiveCamera,
+    pub scene: Scene3D,
+}
+
+pub trait SceneLoopHandler {
+    fn scene_elements_mut(&mut self) -> &mut SceneElements;
+    fn on_mouse_event(&mut self, event: &DeviceEvent) {
+        self.scene_elements_mut().camera.mouse_event_listener(event);
+    }
+    fn on_keyboard_event(&mut self, event: &KeyEvent) {
+        self.scene_elements_mut()
+            .camera
+            .keyboard_event_listener(event);
+    }
+    fn on_window_event(&mut self, _event: &WindowEvent) -> EventResponse {
+        EventResponse::default()
+    }
+    fn on_resize(&mut self, _draw_context: &DrawContext) {}
+    fn on_update(&mut self, update_context: &RenderContext);
+    fn on_post_render(
+        &mut self,
+        _render_context: &RenderContext,
+        _render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
+    }
+}
+
+pub struct SceneLoopScheduler {
+    scene_loop_handler: Box<dyn SceneLoopHandler>,
+}
+
+impl SceneLoopScheduler {
+    pub fn run(scene_loop_handler: impl SceneLoopHandler + 'static) -> Box<dyn RenderLoopHandler> {
+        Box::new(Self {
+            scene_loop_handler: Box::new(scene_loop_handler),
+        })
+    }
+}
+
+impl RenderLoopHandler for SceneLoopScheduler {
+    fn on_mouse_event(&mut self, event: &DeviceEvent) {
+        self.scene_loop_handler.on_mouse_event(event);
+    }
+
+    fn on_keyboard_event(&mut self, event: &KeyEvent) {
+        self.scene_loop_handler
+            .scene_elements_mut()
+            .camera
+            .keyboard_event_listener(event);
+    }
+
+    // FIXME There should not be a dependency on egui_winit here!!!
+    fn on_window_event(&mut self, event: &WindowEvent) -> EventResponse {
+        self.scene_loop_handler.on_window_event(event)
+    }
+
+    fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
+        let scenario = &mut *self.scene_loop_handler;
+        scenario.on_update(render_context);
+        let SceneElements { camera, scene } = scenario.scene_elements_mut();
+        let mut rpass = render_pass.forget_lifetime();
+        camera.update();
+        scene.update(render_context, &camera.camera);
+        scene.render(&mut rpass);
+        scenario.on_post_render(render_context, &mut rpass);
     }
 }
