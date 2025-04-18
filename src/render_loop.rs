@@ -117,9 +117,10 @@ impl RenderLoopHandler for SceneLoopScheduler {
     }
 
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
-        let mut rpass = render_pass.forget_lifetime();
         let scenario = &mut *self.scene_loop_handler;
+        scenario.on_update(render_context);
         let SceneElements { camera, scene } = scenario.scene_elements_mut();
+        let mut rpass = render_pass.forget_lifetime();
         camera.update();
         scene.update(render_context, &camera.camera);
         scene.render(&mut rpass);
