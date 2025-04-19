@@ -22,11 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use egui_winit::EventResponse;
 use wgpu_igniter::support::egui::EguiSupport;
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, RenderContext, RenderLoopHandler,
-    Uniform,
+    DrawContext, DrawModeParams, Drawable, DrawableBuilder, EventState, RenderContext,
+    RenderLoopHandler, Uniform,
 };
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");
@@ -83,7 +82,7 @@ impl MainScenario {
 }
 
 impl RenderLoopHandler for MainScenario {
-    fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventResponse {
+    fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventState {
         self.egui_support.on_window_event(event)
     }
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {

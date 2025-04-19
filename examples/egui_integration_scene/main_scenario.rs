@@ -22,14 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use egui_winit::EventResponse;
 use std::rc::Rc;
 use wgpu_igniter::cameras::{InteractiveCamera, PerspectiveConfig};
 use wgpu_igniter::primitives::cube::CubeOptions;
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
 use wgpu_igniter::support::egui::EguiSupport;
-use wgpu_igniter::{DrawContext, RenderContext};
+use wgpu_igniter::{DrawContext, EventState, RenderContext};
 use winit::event::DeviceEvent;
 
 const DEFAULT_SHADER: &str = include_str!(concat!(
@@ -115,7 +114,7 @@ impl SceneLoopHandler for MainScenario {
 
     // NOTE Or maybe EguiSupport could add some callbacks to the window event, to avoid having to write those lines?
     // Actually, could be the base of other mechanisms like for Scene3D, instead of manually iterating on the drawables?
-    fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventResponse {
+    fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventState {
         self.egui_support.on_window_event(event)
     }
 

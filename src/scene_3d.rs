@@ -23,13 +23,12 @@ SOFTWARE.
 */
 
 use crate::{
-    RenderLoopHandler,
+    EventState, RenderLoopHandler,
     cameras::{Camera, InteractiveCamera},
     draw_context::{DrawContext, Drawable, Uniform},
     render_loop::RenderContext,
 };
 use cgmath::{SquareMatrix, Zero};
-use egui_winit::EventResponse;
 use std::{cell::RefCell, rc::Rc};
 use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
 
@@ -117,8 +116,8 @@ pub trait SceneLoopHandler {
             .camera
             .keyboard_event_listener(event);
     }
-    fn on_window_event(&mut self, _event: &WindowEvent) -> EventResponse {
-        EventResponse::default()
+    fn on_window_event(&mut self, _event: &WindowEvent) -> EventState {
+        EventState::default()
     }
     fn on_resize(&mut self, _draw_context: &DrawContext) {}
     fn on_update(&mut self, update_context: &RenderContext);
@@ -154,8 +153,7 @@ impl RenderLoopHandler for SceneLoopScheduler {
             .keyboard_event_listener(event);
     }
 
-    // FIXME There should not be a dependency on egui_winit here!!!
-    fn on_window_event(&mut self, event: &WindowEvent) -> EventResponse {
+    fn on_window_event(&mut self, event: &WindowEvent) -> EventState {
         self.scene_loop_handler.on_window_event(event)
     }
 

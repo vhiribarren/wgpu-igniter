@@ -23,7 +23,6 @@ SOFTWARE.
 */
 
 use crate::draw_context::DrawContext;
-use egui_winit::EventResponse;
 use web_time::{Duration, Instant};
 use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
 
@@ -51,12 +50,16 @@ pub struct RenderContext<'a> {
     pub(crate) _private: (),
 }
 
+#[derive(Default)]
+pub struct EventState {
+    pub processed: bool,
+}
+
 pub trait RenderLoopHandler {
     fn on_mouse_event(&mut self, _event: &DeviceEvent) {}
     fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
-    // FIXME There should not be a dependency on egui_winit here!!!
-    fn on_window_event(&mut self, _event: &WindowEvent) -> EventResponse {
-        EventResponse::default()
+    fn on_window_event(&mut self, _event: &WindowEvent) -> EventState {
+        EventState::default()
     }
     fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>);
     fn is_finished(&self) -> bool {

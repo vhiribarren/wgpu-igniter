@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
-use crate::draw_context::DrawContext;
-use egui_winit::EventResponse;
+use crate::{EventState, draw_context::DrawContext};
 use winit::window::Window;
 
 pub enum EguiSupport {
@@ -65,12 +64,17 @@ impl EguiSupport {
         }
     }
 
-    pub fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventResponse {
+    pub fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventState {
         match self {
-            EguiSupport::WithWindow(egui_support) => egui_support
-                .egui_state
-                .on_window_event(&egui_support.window, event),
-            EguiSupport::NoWindow(_) => EventResponse::default(),
+            EguiSupport::WithWindow(egui_support) => {
+                let event_response = egui_support
+                    .egui_state
+                    .on_window_event(&egui_support.window, event);
+                EventState {
+                    processed: event_response.consumed,
+                }
+            }
+            EguiSupport::NoWindow(_) => EventState::default(),
         }
     }
 

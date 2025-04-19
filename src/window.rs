@@ -197,7 +197,7 @@ impl ApplicationHandler<App> for AppHandlerState {
             return;
         };
         let event_response = app.scenario.on_window_event(&event);
-        if event_response.consumed {
+        if event_response.processed {
             return;
         }
         match event {
