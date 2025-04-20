@@ -36,7 +36,7 @@ const ENV_HEADLESS: &str = "HEADLESS";
 
 pub fn launch_app<F>(builder: F)
 where
-    F: Fn(&mut DrawContext) -> Box<dyn RenderLoopHandler> + 'static,
+    F: Fn(&mut DrawContext) -> Box<dyn RenderLoopHandler> + 'static + Send,
 {
     init_log();
     info!("Init app");
@@ -78,22 +78,23 @@ fn init_log() {
                 record.target(),
                 record.line().unwrap_or_default(),
                 message
-            ))
+            ));
         })
         .apply()
         .unwrap();
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+#[allow(clippy::needless_pass_by_value)]
 fn init_headless(builder: Box<RenderLoopBuilder>) {
     use pollster::FutureExt;
 
-    use crate::render_loop::RenderContext;
+    use crate::{TimeInfo, render_loop::RenderContext};
     let draw_context = &mut DrawContext::new(None, None).block_on().unwrap();
     let mut scene_handler = builder(draw_context);
     // NOTE I do not like this circular dependency on context
     let render_context = RenderContext {
-        time_info: &Default::default(),
+        time_info: &TimeInfo::default(),
         draw_context,
         _private: (),
     };

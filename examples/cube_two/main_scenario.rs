@@ -58,7 +58,7 @@ impl MainScenario {
             &interpolated_shader_module,
             &interpolated_shader_module,
             scene.scene_uniforms(),
-            Default::default(),
+            &Default::default(),
         )
         .into_shareable();
         let cube_right = cube::create_cube_with_colors(
@@ -66,7 +66,7 @@ impl MainScenario {
             &flat_shader_module,
             &flat_shader_module,
             scene.scene_uniforms(),
-            Default::default(),
+            &Default::default(),
         )
         .into_shareable();
         cube_left

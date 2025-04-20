@@ -45,7 +45,7 @@ struct MouseState {
 
 impl MouseState {
     fn new() -> Self {
-        MouseState {
+        Self {
             is_cursor_inside: false,
             mouse_rotation_enabled: false,
         }
@@ -241,9 +241,9 @@ impl ApplicationHandler<App> for AppHandlerState {
                 let draw_delta = app.last_draw_instant.elapsed();
                 app.last_draw_instant = Instant::now();
                 if app.last_fps_instant.elapsed() >= TARGET_FPS_DISPLAY_PERIOD {
-                    info!("FPS: {}", (1.0 / draw_delta.as_secs_f64()).round() as usize);
+                    info!("FPS: {}", (1.0 / draw_delta.as_secs_f64()).round());
                     app.last_fps_instant = app.last_draw_instant;
-                };
+                }
                 let render_context = &RenderContext {
                     draw_context: &app.draw_context,
                     time_info: &TimeInfo {
@@ -292,7 +292,11 @@ impl ApplicationHandler<App> for AppHandlerState {
             event_loop.set_control_flow(ControlFlow::Poll);
         } else {
             event_loop.set_control_flow(ControlFlow::WaitUntil(
-                Instant::now() + app.draw_period_target - since_last_draw,
+                Instant::now()
+                    + app
+                        .draw_period_target
+                        .checked_sub(since_last_draw)
+                        .expect("Substraction of a Duration from an Instant should not underflow"),
             ));
         }
     }

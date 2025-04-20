@@ -32,7 +32,10 @@ use anyhow::{Ok, anyhow, bail};
 use bytemuck::NoUninit;
 use log::debug;
 use wgpu::util::{BufferInitDescriptor, DeviceExt};
-use wgpu::{PipelineLayoutDescriptor, SurfaceConfiguration, Texture};
+use wgpu::{
+    DepthBiasState, PipelineCompilationOptions, PipelineLayoutDescriptor, StencilState,
+    SurfaceConfiguration, Texture,
+};
 use winit::window::Window;
 
 pub struct Dimensions {
@@ -70,11 +73,10 @@ impl IndexData<'_> {
         }
     }
     #[must_use]
-    #[allow(clippy::cast_possible_truncation)]
     pub fn size(&self) -> u32 {
         match self {
-            IndexData::U32(data) => data.len() as u32,
-            IndexData::U16(data) => data.len() as u32,
+            IndexData::U32(data) => u32::try_from(data.len()).expect("Value should fit in u32"),
+            IndexData::U16(data) => u32::try_from(data.len()).expect("Value should fit in u32"),
         }
     }
     #[must_use]
@@ -360,7 +362,7 @@ impl<'a> DrawableBuilder<'a> {
             let mut bindings = BTreeMap::new();
             bindings.insert(binding, to_store);
             self.binding_groups[bind_group] = Some(bindings);
-        };
+        }
         // TODO Ensure group and binding are not already used
         Ok(self)
     }
@@ -394,7 +396,7 @@ impl<'a> DrawableBuilder<'a> {
             let mut bindings = BTreeMap::new();
             bindings.insert(binding, to_store);
             self.binding_groups[bind_group] = Some(bindings);
-        };
+        }
         // TODO Ensure group and binding are not already used
         Ok(self)
     }
@@ -463,10 +465,13 @@ impl<'a> DrawableBuilder<'a> {
             .push(Arc::clone(&instances_attributes.instance_buffer));
         Ok(self)
     }
+    #[must_use]
+    #[allow(clippy::too_many_lines)] // TODO: Refactor this function
     pub fn build(self) -> Drawable {
         let mut bind_groups = BTreeMap::<u32, wgpu::BindGroup>::new();
         let mut bind_group_layouts = Vec::new();
         for (group_id, group) in self.binding_groups.into_iter().enumerate() {
+            let group_id = u32::try_from(group_id).expect("Value should fit in u32");
             let mut bind_group_layout_entries = Vec::new();
             let mut bind_group_entries = Vec::new();
             if let Some(group) = group {
@@ -494,7 +499,7 @@ impl<'a> DrawableBuilder<'a> {
                     entries: &bind_group_entries,
                 });
             bind_group_layouts.push(bind_group_layout);
-            bind_groups.insert(group_id as u32, bind_group);
+            bind_groups.insert(group_id, bind_group);
         }
 
         let mut vertex_buffer_layouts = self.layouts;
@@ -505,7 +510,7 @@ impl<'a> DrawableBuilder<'a> {
             module: self.vtx_shader_module,
             entry_point: None,
             buffers: &vertex_buffer_layouts,
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
         };
         let fragment_state = wgpu::FragmentState {
             module: self.frg_shader_module,
@@ -515,7 +520,7 @@ impl<'a> DrawableBuilder<'a> {
                 blend: self.blend_option,
                 write_mask: wgpu::ColorWrites::ALL,
             })],
-            compilation_options: Default::default(),
+            compilation_options: PipelineCompilationOptions::default(),
         };
         let pipeline_layout =
             self.context
@@ -547,8 +552,8 @@ impl<'a> DrawableBuilder<'a> {
                         format: wgpu::TextureFormat::Depth32Float,
                         depth_write_enabled: true,
                         depth_compare: wgpu::CompareFunction::LessEqual,
-                        stencil: Default::default(),
-                        bias: Default::default(),
+                        stencil: StencilState::default(),
+                        bias: DepthBiasState::default(),
                     }),
                     multisample: wgpu::MultisampleState {
                         count: self.context.multisample_config.get_multisample_count(),
@@ -596,7 +601,8 @@ impl Drawable {
             render_pass.set_bind_group(*group_id, bind_group, &[]);
         }
         for (slot, vertex_buffer) in self.buffers.iter().enumerate() {
-            render_pass.set_vertex_buffer(slot as u32, vertex_buffer.slice(..));
+            let slot = u32::try_from(slot).expect("Value should fit in u32");
+            render_pass.set_vertex_buffer(slot, vertex_buffer.slice(..));
         }
         match &self.draw_mode {
             DrawMode::Direct { vertex_count } => {
@@ -614,8 +620,8 @@ impl Drawable {
     }
 }
 
-impl AsRef<Drawable> for Drawable {
-    fn as_ref(&self) -> &Drawable {
+impl AsRef<Self> for Drawable {
+    fn as_ref(&self) -> &Self {
         self
     }
 }
@@ -626,12 +632,15 @@ pub struct MultiSampleConfig {
 }
 
 impl MultiSampleConfig {
+    #[must_use]
     pub fn get_multisample_count(&self) -> u32 {
-        match self.multisample_enabled {
-            true => self.multisample_count,
-            false => 1,
+        if self.multisample_enabled {
+            self.multisample_count
+        } else {
+            1
         }
     }
+    #[must_use]
     pub fn is_multisample_enabled(&self) -> bool {
         self.multisample_enabled
     }
@@ -677,8 +686,8 @@ impl DeviceLocalExt for wgpu::Device {
         surface_config: &SurfaceConfiguration,
         multisample_config: &MultiSampleConfig,
     ) -> Option<Texture> {
-        match multisample_config.multisample_enabled {
-            true => Some(self.create_texture(&wgpu::TextureDescriptor {
+        if multisample_config.multisample_enabled {
+            Some(self.create_texture(&wgpu::TextureDescriptor {
                 label: Some("Mutisample Texture"),
                 size: wgpu::Extent3d {
                     width: surface_config.width,
@@ -691,8 +700,9 @@ impl DeviceLocalExt for wgpu::Device {
                 format: surface_config.format,
                 view_formats: &[],
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            })),
-            false => None,
+            }))
+        } else {
+            None
         }
     }
 }
@@ -704,15 +714,15 @@ enum DrawTarget {
 
 impl DrawTarget {
     fn new_texture_target(device: &wgpu::Device, width: u32, height: u32) -> Self {
-        DrawTarget::Texture(Self::create_texture(device, width, height))
+        Self::Texture(Self::create_texture(device, width, height))
     }
     fn configure(&mut self, device: &wgpu::Device, surface_config: &wgpu::SurfaceConfiguration) {
         match self {
-            DrawTarget::Texture(texture) => {
+            Self::Texture(texture) => {
                 *texture =
                     Self::create_texture(device, surface_config.width, surface_config.height);
             }
-            DrawTarget::Surface(surface) => {
+            Self::Surface(surface) => {
                 surface.configure(device, surface_config);
             }
         }
@@ -764,14 +774,17 @@ impl DrawContext {
     pub async fn new(
         window: Option<Arc<Window>>,
         dimensions: Option<Dimensions>,
-    ) -> anyhow::Result<DrawContext> {
-        let (width, height) = if let Some(d) = dimensions {
-            (d.width, d.height)
-        } else if let Some(w) = &window {
-            (w.inner_size().width, w.inner_size().height)
-        } else {
-            (Self::DEFAULT_WIDTH, Self::DEFAULT_HEIGHT)
-        };
+    ) -> anyhow::Result<Self> {
+        let (width, height) = dimensions.map_or_else(
+            || {
+                window
+                    .as_ref()
+                    .map_or((Self::DEFAULT_WIDTH, Self::DEFAULT_HEIGHT), |w| {
+                        (w.inner_size().width, w.inner_size().height)
+                    })
+            },
+            |d| (d.width, d.height),
+        );
         let multisample_config = MultiSampleConfig {
             multisample_enabled: Self::DEFAULT_MULTISAMPLE_ENABLED,
             multisample_count: Self::DEFAULT_MULTISAMPLE_COUNT,
@@ -785,7 +798,7 @@ impl DrawContext {
             .map(|w| instance.create_surface(Arc::clone(w)).unwrap());
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: Default::default(),
+                power_preference: wgpu::PowerPreference::default(),
                 force_fallback_adapter: false,
                 compatible_surface: surface.as_ref(),
             })
@@ -809,11 +822,10 @@ impl DrawContext {
                 None,
             )
             .await?;
-        let mut draw_target = if let Some(surface) = surface {
-            DrawTarget::Surface(surface)
-        } else {
-            DrawTarget::new_texture_target(&device, width, height)
-        };
+        let mut draw_target = surface.map_or_else(
+            || DrawTarget::new_texture_target(&device, width, height),
+            DrawTarget::Surface,
+        );
         let surface_format = if let DrawTarget::Surface(s) = &draw_target {
             let surface_caps = s.get_capabilities(&adapter);
             surface_caps
@@ -840,7 +852,7 @@ impl DrawContext {
         let multisample_texture =
             device.create_multisample_texture(&surface_config, &multisample_config);
 
-        Ok(DrawContext {
+        Ok(Self {
             window,
             multisample_config,
             multisample_texture,
@@ -917,10 +929,9 @@ impl DrawContext {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Command Encoder"),
             });
-        let load_op = match self.clear_color {
-            Some(color) => wgpu::LoadOp::Clear(color),
-            None => wgpu::LoadOp::Load,
-        };
+        let load_op = self
+            .clear_color
+            .map_or(wgpu::LoadOp::Load, wgpu::LoadOp::Clear);
         let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("Render pass"),
             timestamp_writes: None,
@@ -947,7 +958,7 @@ impl DrawContext {
         self.queue.submit(command_buffers);
         if let Some(s) = surface_texture {
             s.present();
-        };
+        }
         Ok(())
     }
 }

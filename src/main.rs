@@ -22,13 +22,4 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#![warn(clippy::pedantic, clippy::nursery)]
-
-mod main_scenario;
-
-use main_scenario::MainScenario;
-use wgpu_igniter::{launch_app, scene_3d::SceneLoopScheduler};
-
-fn main() {
-    launch_app(|c| SceneLoopScheduler::run(MainScenario::new(c)));
-}
+include!("../examples/egui_integration_scene/main.rs");

@@ -79,7 +79,7 @@ impl MainScenario {
             &shader_module,
             &shader_module,
             scene.scene_uniforms(),
-            CubeOptions::default(),
+            &CubeOptions::default(),
         )
         .into_shareable();
         scene.add(cube.clone());

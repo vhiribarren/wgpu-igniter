@@ -49,7 +49,7 @@ pub struct OrthogonalConfig {
 
 impl Default for OrthogonalConfig {
     fn default() -> Self {
-        OrthogonalConfig {
+        Self {
             width: 16.0 / 4.0,
             height: 9.0 / 4.0,
             eye: Point3 {
@@ -75,7 +75,7 @@ impl Default for OrthogonalConfig {
 
 impl From<OrthogonalConfig> for Camera {
     fn from(config: OrthogonalConfig) -> Self {
-        Camera {
+        Self {
             projection: Matrix4::from(Ortho {
                 left: -config.width / 2.0,
                 right: config.width / 2.0,
@@ -101,7 +101,7 @@ pub struct PerspectiveConfig {
 
 impl Default for PerspectiveConfig {
     fn default() -> Self {
-        PerspectiveConfig {
+        Self {
             fovy: PI / 4.0,
             aspect: 16. / 9.,
             near: 0.1,
@@ -127,7 +127,7 @@ impl Default for PerspectiveConfig {
 
 impl From<PerspectiveConfig> for Camera {
     fn from(config: PerspectiveConfig) -> Self {
-        Camera {
+        Self {
             projection: Matrix4::from(PerspectiveFov {
                 fovy: Rad(config.fovy),
                 aspect: config.aspect,
@@ -150,6 +150,7 @@ impl Camera {
     pub fn get_camera_matrix(&self) -> Matrix4<f32> {
         (*TO_WEBGPU_NDCS) * self.projection * (*SWITCH_Z_AXIS) * self.view
     }
+    #[must_use]
     pub fn get_eye_position(&self) -> Point3<f32> {
         let view = self.view;
         let rotation = cgmath::Matrix3::new(
@@ -194,7 +195,7 @@ impl InteractiveCamera {
 
     #[must_use]
     pub fn new(camera: Camera) -> Self {
-        InteractiveCamera {
+        Self {
             camera,
             enabled_keys: BTreeSet::new(),
             key_speed: Self::DEFAULT_KEY_SPEED,
@@ -202,6 +203,7 @@ impl InteractiveCamera {
         }
     }
 
+    #[must_use]
     pub fn get_camera_matrix(&self) -> Matrix4<f32> {
         self.camera.get_camera_matrix()
     }
@@ -217,7 +219,7 @@ impl InteractiveCamera {
                 delta: _scroll_delta,
             } => {}
             _ => {}
-        };
+        }
     }
 
     pub fn keyboard_event_listener(&mut self, input: &KeyEvent) {
@@ -253,7 +255,7 @@ impl InteractiveCamera {
                 KeyCode::Home => self.camera.roll(-key_speed / 2.0),
                 KeyCode::End => self.camera.roll(key_speed / 2.0),
                 _ => {}
-            };
+            }
         }
         debug!("{:?}", -self.as_ref().view);
     }

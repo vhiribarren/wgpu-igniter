@@ -41,21 +41,14 @@ pub struct Scene3DUniforms {
     _private: (),
 }
 
-#[allow(clippy::manual_non_exhaustive)]
-pub struct CameraData {
-    pub matrix: cgmath::Matrix4<f32>,
-    pub position: cgmath::Point3<f32>,
-    _private: (),
-}
-
 pub struct Scene3D {
     drawables: Vec<DrawableWrapper>,
     scene_uniforms: Scene3DUniforms,
 }
 
 impl Scene3D {
-    pub fn new(context: &DrawContext) -> Scene3D {
-        Scene3D {
+    pub fn new(context: &DrawContext) -> Self {
+        Self {
             drawables: Vec::new(),
             scene_uniforms: Scene3DUniforms {
                 camera_mat: Uniform::new(context, cgmath::Matrix4::identity().into()),
@@ -64,6 +57,7 @@ impl Scene3D {
             },
         }
     }
+    #[must_use]
     pub fn scene_uniforms(&self) -> &Scene3DUniforms {
         &self.scene_uniforms
     }
@@ -77,19 +71,11 @@ impl Scene3D {
             .write_uniform(camera.get_eye_position().into());
     }
 
-    pub fn update_with_camera_data(&mut self, _context: &RenderContext, camera_data: CameraData) {
-        self.scene_uniforms
-            .camera_mat
-            .write_uniform(camera_data.matrix.into());
-        self.scene_uniforms
-            .camera_pos
-            .write_uniform(camera_data.position.into());
-    }
-
     pub fn add(&mut self, element: DrawableWrapper) {
         self.drawables.push(element);
     }
 
+    #[must_use]
     pub fn drawables(&self) -> &[DrawableWrapper] {
         &self.drawables
     }

@@ -42,13 +42,18 @@ pub const TRIANGLE_COLOR: &[[f32;3]] = &[
     color::COLOR_BLUE,
 ];
 
-pub const TRIANGLE_VERTEX_COUNT: u32 = TRIANGLE_GEOMETRY.len() as u32;
+#[allow(clippy::cast_possible_truncation)]
+pub const TRIANGLE_VERTEX_COUNT: u32 = {
+    const LEN: usize = TRIANGLE_GEOMETRY.len();
+    assert!(!(LEN > u32::MAX as usize), "Value exceeds u32::MAX");
+    LEN as u32
+};
 
 pub fn create_equilateral_triangle(
     context: &DrawContext,
     vtx_module: &wgpu::ShaderModule,
     frg_module: &wgpu::ShaderModule,
-) -> Result<Object3D, anyhow::Error> {
+) -> Object3D {
     let transform_uniform = Uniform::new(context, cgmath::Matrix4::identity().into());
 
     let mut drawable_builder = DrawableBuilder::new(
@@ -65,20 +70,23 @@ pub fn create_equilateral_triangle(
             wgpu::VertexStepMode::Vertex,
             TRIANGLE_GEOMETRY,
             wgpu::VertexFormat::Float32x3,
-        )?
+        )
+        .expect("Location should not already be used.")
         .add_attribute(
             1,
             wgpu::VertexStepMode::Vertex,
             TRIANGLE_COLOR,
             wgpu::VertexFormat::Float32x3,
-        )?
-        .add_uniform(0, 0, &transform_uniform)?;
+        )
+        .expect("Location should not already be used.")
+        .add_uniform(0, 0, &transform_uniform)
+        .expect("Binding elements should not already be used.");
     let drawable = drawable_builder.build();
-    Ok(Object3D::new(
+    Object3D::new(
         drawable,
         Object3DUniforms {
             view: transform_uniform,
             normals: None,
         },
-    ))
+    )
 }

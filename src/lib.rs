@@ -22,6 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+#![warn(clippy::nursery)]
+#![warn(clippy::cargo)]
+#![allow(clippy::multiple_crate_versions)]
+#![warn(clippy::pedantic)]
+#![allow(clippy::missing_const_for_fn)]
+#![allow(clippy::redundant_pub_crate)]
+#![allow(clippy::missing_panics_doc, clippy::missing_errors_doc)]
+
 mod launcher;
 mod window;
 

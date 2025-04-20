@@ -171,7 +171,7 @@ pub fn create_cube_with_colors(
     vtx_module: &wgpu::ShaderModule,
     frg_module: &wgpu::ShaderModule,
     uniforms: &Scene3DUniforms,
-    options: CubeOptions,
+    options: &CubeOptions,
 ) -> Object3D {
     let transform_uniform = Uniform::new(context, cgmath::Matrix4::identity().into());
 
@@ -209,7 +209,7 @@ pub fn create_cube_with_colors(
                 dst_factor: wgpu::BlendFactor::OneMinusConstant,
                 operation: wgpu::BlendOperation::Add,
             },
-            alpha: Default::default(),
+            alpha: wgpu::BlendComponent::default(),
         });
     }
     let drawable = drawable_builder.build();
@@ -227,7 +227,7 @@ pub fn create_cube_with_normals(
     vtx_module: &wgpu::ShaderModule,
     frg_module: &wgpu::ShaderModule,
     uniforms: &Scene3DUniforms,
-    options: CubeOptions,
+    options: &CubeOptions,
 ) -> Object3D {
     let transform_uniform = Uniform::new(context, cgmath::Matrix4::identity().into());
     let normals_uniform = Uniform::new(context, cgmath::Matrix3::identity().into());
@@ -237,7 +237,8 @@ pub fn create_cube_with_normals(
         vtx_module,
         frg_module,
         DrawModeParams::Direct {
-            vertex_count: CUBE_GEOMETRY_DUPLICATES.len() as u32,
+            vertex_count: u32::try_from(CUBE_GEOMETRY_DUPLICATES.len())
+                .expect("Len of geometry must fit in u32"),
         },
     );
     drawable_builder
@@ -271,7 +272,7 @@ pub fn create_cube_with_normals(
                 dst_factor: wgpu::BlendFactor::OneMinusConstant,
                 operation: wgpu::BlendOperation::Add,
             },
-            alpha: Default::default(),
+            alpha: wgpu::BlendComponent::default(),
         });
     }
     let drawable = drawable_builder.build();
@@ -290,7 +291,7 @@ pub fn create_cube_with_normals_instances(
     frg_module: &wgpu::ShaderModule,
     uniforms: &Scene3DUniforms,
     count: u32,
-    options: CubeOptions,
+    options: &CubeOptions,
 ) -> Object3DInstanceGroup {
     let handlers = Object3DInstanceGroupHandlers::new(context, count);
     let mut drawable_builder = DrawableBuilder::new(
@@ -298,7 +299,8 @@ pub fn create_cube_with_normals_instances(
         vtx_module,
         frg_module,
         DrawModeParams::Direct {
-            vertex_count: CUBE_GEOMETRY_DUPLICATES.len() as u32,
+            vertex_count: u32::try_from(CUBE_GEOMETRY_DUPLICATES.len())
+                .expect("Len of geometry must fit in u32"),
         },
     );
     drawable_builder

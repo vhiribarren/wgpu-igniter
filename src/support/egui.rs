@@ -18,7 +18,7 @@ pub struct EguiSupportWithWindow {
 impl EguiSupport {
     pub fn new(draw_context: &DrawContext) -> Self {
         let Some(window) = draw_context.window.as_ref() else {
-            return EguiSupport::NoWindow(egui::Context::default());
+            return Self::NoWindow(egui::Context::default());
         };
         let window = Arc::clone(window);
         let egui_state = egui_winit::State::new(
@@ -36,37 +36,40 @@ impl EguiSupport {
             draw_context.multisample_config.get_multisample_count(),
             true,
         );
-        EguiSupport::WithWindow(EguiSupportWithWindow {
+        Self::WithWindow(EguiSupportWithWindow {
             egui_state,
             egui_renderer,
+            #[allow(clippy::cast_possible_truncation)]
             pixels_per_point: window.scale_factor() as f32,
             window,
         })
     }
     pub fn set_pixels_per_point(&mut self, pixels_per_point: f32) {
         match self {
-            EguiSupport::WithWindow(egui_support) => {
+            Self::WithWindow(egui_support) => {
                 egui_support.pixels_per_point = pixels_per_point;
             }
-            EguiSupport::NoWindow(_) => {}
+            Self::NoWindow(_) => {}
         }
     }
+    #[must_use]
     pub fn get_pixels_per_point(&self) -> f32 {
         match self {
-            EguiSupport::WithWindow(egui_support) => egui_support.pixels_per_point,
-            EguiSupport::NoWindow(_) => 1.0,
+            Self::WithWindow(egui_support) => egui_support.pixels_per_point,
+            Self::NoWindow(_) => 1.0,
         }
     }
+    #[must_use]
     pub fn egui_context(&self) -> &egui::Context {
         match self {
-            EguiSupport::NoWindow(ctx) => ctx,
-            EguiSupport::WithWindow(egui_support) => egui_support.egui_state.egui_ctx(),
+            Self::NoWindow(ctx) => ctx,
+            Self::WithWindow(egui_support) => egui_support.egui_state.egui_ctx(),
         }
     }
 
     pub fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventState {
         match self {
-            EguiSupport::WithWindow(egui_support) => {
+            Self::WithWindow(egui_support) => {
                 let event_response = egui_support
                     .egui_state
                     .on_window_event(&egui_support.window, event);
@@ -74,7 +77,7 @@ impl EguiSupport {
                     processed: event_response.consumed,
                 }
             }
-            EguiSupport::NoWindow(_) => EventState::default(),
+            Self::NoWindow(_) => EventState::default(),
         }
     }
 
@@ -86,7 +89,7 @@ impl EguiSupport {
     ) where
         F: FnOnce(&egui::Context),
     {
-        let EguiSupport::WithWindow(egui_support) = self else {
+        let Self::WithWindow(egui_support) = self else {
             return;
         };
         let screen_descriptor = egui_wgpu::ScreenDescriptor {
@@ -106,7 +109,7 @@ impl EguiSupport {
             egui_support,
             &draw_context.device,
             &draw_context.queue,
-            screen_descriptor,
+            &screen_descriptor,
             &mut encoder,
             rpass,
         );
@@ -123,7 +126,7 @@ impl EguiSupport {
         egui_support: &mut EguiSupportWithWindow,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
-        screen_descriptor: egui_wgpu::ScreenDescriptor,
+        screen_descriptor: &egui_wgpu::ScreenDescriptor,
         encoder: &mut wgpu::CommandEncoder,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
@@ -147,19 +150,15 @@ impl EguiSupport {
                 .egui_renderer
                 .update_texture(device, queue, *id, image_delta);
         }
-        egui_support.egui_renderer.update_buffers(
-            device,
-            queue,
-            encoder,
-            &tris,
-            &screen_descriptor,
-        );
+        egui_support
+            .egui_renderer
+            .update_buffers(device, queue, encoder, &tris, screen_descriptor);
 
         egui_support
             .egui_renderer
-            .render(render_pass, &tris, &screen_descriptor);
+            .render(render_pass, &tris, screen_descriptor);
         for x in &full_output.textures_delta.free {
-            egui_support.egui_renderer.free_texture(x)
+            egui_support.egui_renderer.free_texture(x);
         }
     }
 }

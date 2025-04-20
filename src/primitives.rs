@@ -73,8 +73,9 @@ pub struct Object3D {
 }
 
 impl Object3D {
+    #[must_use]
     pub fn new(drawable: Drawable, uniforms: Object3DUniforms) -> Self {
-        Object3D {
+        Self {
             drawable,
             transform: Matrix4::<f32>::identity(),
             opacity: 1.0,
@@ -94,8 +95,10 @@ impl Object3D {
     }
     pub fn set_opacity(&mut self, value: f32) {
         self.opacity = value.clamp(0., 1.);
-        self.drawable.set_blend_color_opacity(self.opacity as f64);
+        self.drawable
+            .set_blend_color_opacity(f64::from(self.opacity));
     }
+    #[must_use]
     pub fn get_opacity(&self) -> f32 {
         self.opacity
     }
@@ -133,7 +136,7 @@ pub struct Object3DInstanceGroupHandlers {
 
 impl Object3DInstanceGroupHandlers {
     pub fn new(context: &DrawContext, count: u32) -> Self {
-        Object3DInstanceGroupHandlers {
+        Self {
             instances: vec![Object3DInstance::default(); count as usize],
             transforms: StorageBuffer::new_array(context, &vec![[[0.; 4]; 4]; count as usize]),
             normal_mats: StorageBuffer::new_array(context, &vec![[[0.; 3]; 3]; count as usize]),
@@ -174,7 +177,7 @@ pub struct Object3DInstance {
 
 impl Default for Object3DInstance {
     fn default() -> Self {
-        Object3DInstance {
+        Self {
             translation: cgmath::Vector3::new(0., 0., 0.),
             rotation: cgmath::Quaternion::from_axis_angle(
                 cgmath::Vector3::unit_z(),
@@ -197,9 +200,11 @@ impl Object3DInstance {
     pub fn apply_translation(&mut self, translation: cgmath::Vector3<f32>) {
         self.translation += translation;
     }
+    #[must_use]
     pub fn get_transform(&self) -> cgmath::Matrix4<f32> {
         cgmath::Matrix4::from_translation(self.translation) * cgmath::Matrix4::from(self.rotation)
     }
+    #[must_use]
     pub fn get_normal_matrix(&self) -> cgmath::Matrix3<f32> {
         cgmath::Matrix3::from(self.rotation)
     }
@@ -212,6 +217,7 @@ pub struct Object3DInstanceGroup {
 }
 
 impl Object3DInstanceGroup {
+    #[must_use]
     pub fn new(drawable: Drawable, handlers: Object3DInstanceGroupHandlers) -> Self {
         Self {
             drawable,
@@ -227,8 +233,10 @@ impl Object3DInstanceGroup {
     }
     pub fn set_opacity(&mut self, value: f32) {
         self.opacity = value.clamp(0., 1.);
-        self.drawable.set_blend_color_opacity(self.opacity as f64);
+        self.drawable
+            .set_blend_color_opacity(f64::from(self.opacity));
     }
+    #[must_use]
     pub fn get_opacity(&self) -> f32 {
         self.opacity
     }

@@ -67,4 +67,4 @@ pub trait RenderLoopHandler {
     }
 }
 
-pub type RenderLoopBuilder = dyn Fn(&mut DrawContext) -> Box<dyn RenderLoopHandler>;
+pub type RenderLoopBuilder = dyn Fn(&mut DrawContext) -> Box<dyn RenderLoopHandler> + Send;

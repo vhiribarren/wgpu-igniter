@@ -42,7 +42,8 @@ pub fn create_canvas(
         vtx_module,
         frg_module,
         crate::draw_context::DrawModeParams::Direct {
-            vertex_count: TRIANGLE_GEOMETRY_CANVAS.len() as u32,
+            vertex_count: u32::try_from(TRIANGLE_GEOMETRY_CANVAS.len())
+                .expect("Len of geometry must fit in u32"),
         },
     );
     drawable_builder.add_attribute(

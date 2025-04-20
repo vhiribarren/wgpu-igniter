@@ -42,8 +42,6 @@ pub struct MainScenario {
 }
 
 impl MainScenario {
-    #[allow(clippy::cast_possible_truncation)]
-    #[allow(clippy::cast_precision_loss)]
     pub fn new(draw_context: &mut DrawContext) -> Self {
         draw_context.set_clear_color(Some(wgpu::Color::BLACK));
         let camera = InteractiveCamera::new(PerspectiveConfig::default().into());
@@ -56,7 +54,7 @@ impl MainScenario {
                 &shader_module,
                 scene.scene_uniforms(),
                 (CUBE_WIDTH_COUNT * CUBE_DEPTH_COUNT) as u32,
-                CubeOptions::default(),
+                &CubeOptions::default(),
             );
             cube_init.update_instances(|idx, instance| {
                 let x = (idx % CUBE_WIDTH_COUNT) as f32;
@@ -89,7 +87,6 @@ impl SceneLoopHandler for MainScenario {
         &mut self.scene_elements
     }
 
-    #[allow(clippy::cast_precision_loss)]
     fn on_update(&mut self, render_context: &RenderContext) {
         let &RenderContext {
             time_info: render_interval,
