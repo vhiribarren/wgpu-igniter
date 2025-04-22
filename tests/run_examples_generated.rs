@@ -68,4 +68,6 @@ generate_test_case!(example_egui_integration_scene_doesnt_panic, "egui_integrati
 #[rustfmt::skip]
 generate_test_case!(example_scenario_sequence_doesnt_panic, "scenario_sequence");
 #[rustfmt::skip]
-generate_test_case!(example_triangle_direct_doesnt_panic, "triangle_direct");
+generate_test_case!(example_triangle_raw_doesnt_panic, "triangle_raw");
+#[rustfmt::skip]
+generate_test_case!(example_triangle_rotation_doesnt_panic, "triangle_rotation");

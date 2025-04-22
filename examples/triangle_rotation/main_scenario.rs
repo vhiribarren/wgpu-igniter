@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 use cgmath::SquareMatrix;
+use wgpu::SurfaceConfiguration;
 use wgpu_igniter::primitives::triangle::{
     TRIANGLE_COLOR, TRIANGLE_GEOMETRY, TRIANGLE_VERTEX_COUNT,
 };
@@ -31,7 +32,7 @@ use wgpu_igniter::{
     Uniform,
 };
 
-const DEFAULT_SHADER: &str = include_str!("./triangle_direct.wgsl");
+const DEFAULT_SHADER: &str = include_str!("./triangle_rotation.wgsl");
 
 const ROTATION_DEG_PER_S: f32 = 45.0;
 
@@ -79,16 +80,22 @@ impl MainScenario {
 
 impl RenderLoopHandler for MainScenario {
     fn on_render(&mut self, render_context: &RenderContext, mut render_pass: wgpu::RenderPass<'_>) {
+        let SurfaceConfiguration { width, height, .. } = render_context.draw_context.surface_config;
+        // NOTE Case where there is no screen?
+        // NOTE Better accessor to screen size as functions from draw_context?
+        let screen_ratio = height as f32 / width as f32;
+        let scale_factor = if screen_ratio < 1.0 {
+            cgmath::Matrix4::from_nonuniform_scale(screen_ratio, 1.0, 1.0)
+        } else {
+            cgmath::Matrix4::from_nonuniform_scale(1.0, 1.0 / screen_ratio, 1.0)
+        };
         let total_seconds = render_context.time_info.init_start.elapsed().as_secs_f32();
         let new_rotation = ROTATION_DEG_PER_S * total_seconds;
-        let transform: cgmath::Matrix4<f32> = cgmath::Matrix4::from_scale(0.5)
+        let transform: cgmath::Matrix4<f32> = scale_factor
+            * cgmath::Matrix4::from_scale(0.9)
             * cgmath::Matrix4::from_angle_z(cgmath::Deg(new_rotation));
         self.transform_uniform.write_uniform(transform.into());
 
         self.triangle.render(&mut render_pass);
     }
-
-    fn on_mouse_event(&mut self, _event: &winit::event::DeviceEvent) {}
-
-    fn on_keyboard_event(&mut self, _event: &winit::event::KeyEvent) {}
 }

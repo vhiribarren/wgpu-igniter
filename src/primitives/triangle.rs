@@ -31,9 +31,9 @@ use super::{Object3DUniforms, color};
 
 #[rustfmt::skip]
 pub const TRIANGLE_GEOMETRY: &[[f32; 3]] = &[
-    [0., 2., 0.],
-    [-1.732, -1.0, 0.],
-    [1.732, -1.0, 0.],
+    [0., 1., 0.],
+    [-0.866, -0.5, 0.],
+    [0.866, -0.5, 0.],
 ];
 #[rustfmt::skip]
 pub const TRIANGLE_COLOR: &[[f32;3]] = &[
