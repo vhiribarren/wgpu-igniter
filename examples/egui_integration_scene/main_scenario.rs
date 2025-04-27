@@ -24,10 +24,10 @@ SOFTWARE.
 
 use std::rc::Rc;
 use wgpu_igniter::cameras::{Camera, InteractiveCamera};
+use wgpu_igniter::plugins::egui::EguiSupport;
 use wgpu_igniter::primitives::cube::CubeOptions;
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
-use wgpu_igniter::support::egui::EguiSupport;
 use wgpu_igniter::{DrawContext, EventState, RenderContext};
 use winit::event::DeviceEvent;
 

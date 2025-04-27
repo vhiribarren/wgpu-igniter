@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use wgpu_igniter::support::egui::EguiSupport;
+use wgpu_igniter::plugins::egui::EguiSupport;
 use wgpu_igniter::{
     DrawContext, DrawModeParams, Drawable, DrawableBuilder, EventState, RenderContext,
     RenderLoopHandler, Uniform,
