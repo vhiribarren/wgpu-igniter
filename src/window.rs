@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 use crate::draw_context::{self, Dimensions, DrawContext};
+use crate::plugins::PluginRegistry;
 use crate::render_loop::{RenderContext, RenderLoopBuilder, RenderLoopHandler, TimeInfo};
 use log::{debug, info};
 use std::sync::Arc;
@@ -95,6 +96,7 @@ struct App {
     draw_period_target: Duration,
     draw_context: DrawContext,
     scenario: Box<dyn RenderLoopHandler>,
+    plugin_registry: PluginRegistry,
 }
 
 impl App {
@@ -114,6 +116,7 @@ impl App {
                 .await
                 .unwrap();
         let scenario = builder(&mut draw_context);
+        let plugin_registry = PluginRegistry::default();
         Self {
             window,
             mouse_state,
@@ -123,6 +126,7 @@ impl App {
             draw_period_target,
             draw_context,
             scenario,
+            plugin_registry,
         }
     }
 }
@@ -188,7 +192,11 @@ impl ApplicationHandler<App> for AppHandlerState {
         }
     }
 
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: App) {
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: App) {
+        let plugin_registry = &mut event.plugin_registry;
+        let scenario = &mut event.scenario;
+        let draw_context = &event.draw_context;
+        scenario.on_init(plugin_registry, draw_context);
         self.state = Some(event);
     }
 
@@ -196,6 +204,13 @@ impl ApplicationHandler<App> for AppHandlerState {
         let Some(ref mut app) = self.state else {
             return;
         };
+        // TODO Refactor
+        for listener in app.plugin_registry.iter_mut_rev() {
+            let event_response = listener.on_window_event(&event);
+            if event_response.processed {
+                return;
+            }
+        }
         let event_response = app.scenario.on_window_event(&event);
         if event_response.processed {
             return;
@@ -213,6 +228,9 @@ impl ApplicationHandler<App> for AppHandlerState {
             }
             WindowEvent::KeyboardInput { ref event, .. } => {
                 debug!("Key pressed {:?}", event.physical_key);
+                for listenr in app.plugin_registry.iter_mut_rev() {
+                    listenr.on_keyboard_event(event);
+                }
                 app.scenario.on_keyboard_event(event);
             }
             WindowEvent::Moved { .. } => {
@@ -253,8 +271,16 @@ impl ApplicationHandler<App> for AppHandlerState {
                     },
                     _private: (),
                 };
+                let plugin_registry = &mut app.plugin_registry;
                 app.draw_context
-                    .render_scene(|render_pass| app.scenario.on_render(render_context, render_pass))
+                    .render_scene(|render_pass| {
+                        let rpass = &mut render_pass.forget_lifetime();
+                        app.scenario
+                            .on_render(plugin_registry, render_context, rpass);
+                        for listener in plugin_registry.iter_mut() {
+                            listener.on_render(render_context, rpass);
+                        }
+                    })
                     .unwrap();
             }
             _ => {}
@@ -278,6 +304,9 @@ impl ApplicationHandler<App> for AppHandlerState {
             }
         }
         if app.mouse_state.is_mouse_rotation_enabled() {
+            for listener in app.plugin_registry.iter_mut_rev() {
+                listener.on_mouse_event(&event);
+            }
             app.scenario.on_mouse_event(&event);
         }
     }

@@ -23,10 +23,10 @@ SOFTWARE.
 */
 
 use wgpu_igniter::plugins::egui::EguiSupport;
-use wgpu_igniter::plugins::{Plugin, PluginRegistry};
+use wgpu_igniter::plugins::{PluginRegistry, RegistryAccess};
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, EventState, RenderContext,
-    RenderLoopHandler, Uniform,
+    DrawContext, DrawModeParams, Drawable, DrawableBuilder, RenderContext, RenderLoopHandler,
+    Uniform,
 };
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");
@@ -39,15 +39,13 @@ struct GuiState {
 pub struct MainScenario {
     canvas: Drawable,
     time_uniform: Uniform<f32>,
-    egui_support: EguiSupport,
     gui_state: GuiState,
 }
 
 impl MainScenario {
     pub fn new(draw_context: &DrawContext) -> Self {
-        let egui_support = EguiSupport::new(draw_context);
         let gui_state = GuiState {
-            pixels_per_point: egui_support.get_pixels_per_point(),
+            pixels_per_point: 1.0,
             anim_speed: 1.0,
         };
         let time_uniform = Uniform::new(draw_context, 0f32);
@@ -65,7 +63,6 @@ impl MainScenario {
         Self {
             canvas,
             time_uniform,
-            egui_support,
             gui_state,
         }
     }
@@ -83,30 +80,28 @@ impl MainScenario {
 }
 
 impl RenderLoopHandler for MainScenario {
-    fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventState {
-        self.egui_support.on_window_event(event)
+    fn on_init(&mut self, plugin_registry: &mut PluginRegistry, draw_context: &DrawContext) {
+        plugin_registry.register(EguiSupport::new(draw_context));
     }
     fn on_render(
         &mut self,
-        plugins: &mut PluginRegistry,
+        plugin_registry: &mut PluginRegistry,
         render_context: &RenderContext,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
-        let &RenderContext {
+        let RenderContext {
             time_info: update_interval,
             draw_context,
             ..
         } = render_context;
-        self.egui_support
-            .set_pixels_per_point(self.gui_state.pixels_per_point);
+        let egui_support = plugin_registry
+            .get_mut::<EguiSupport>()
+            .expect("EguiSupport should be registered");
+        egui_support.draw(|egui_context| Self::generate_egui(&mut self.gui_state, egui_context));
+        egui_support.set_pixels_per_point(self.gui_state.pixels_per_point);
         self.time_uniform.write_uniform(
             update_interval.init_start.elapsed().as_secs_f32() * self.gui_state.anim_speed,
         );
-
         self.canvas.render(render_pass);
-        self.egui_support.draw(|egui_context| {
-            Self::generate_egui(&mut self.gui_state, egui_context);
-        });
-        self.egui_support.on_render(render_context, render_pass);
     }
 }

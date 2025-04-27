@@ -3,6 +3,8 @@ use std::sync::Arc;
 use crate::{EventState, draw_context::DrawContext};
 use winit::window::Window;
 
+use super::Plugin;
+
 pub enum EguiSupport {
     NoWindow(egui::Context),
     WithWindow(EguiSupportWithWindow),
@@ -67,52 +69,16 @@ impl EguiSupport {
         }
     }
 
-    pub fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventState {
-        match self {
-            Self::WithWindow(egui_support) => {
-                let event_response = egui_support
-                    .egui_state
-                    .on_window_event(&egui_support.window, event);
-                EventState {
-                    processed: event_response.consumed,
-                }
-            }
-            Self::NoWindow(_) => EventState::default(),
-        }
-    }
-
-    pub fn draw<F>(
-        &mut self,
-        draw_context: &DrawContext,
-        rpass: &mut wgpu::RenderPass<'static>,
-        run_ui: F,
-    ) where
+    pub fn draw<F>(&mut self, run_ui: F)
+    where
         F: FnOnce(&egui::Context),
     {
         let Self::WithWindow(egui_support) = self else {
             return;
         };
-        let screen_descriptor = egui_wgpu::ScreenDescriptor {
-            size_in_pixels: [
-                draw_context.surface_config.width,
-                draw_context.surface_config.height,
-            ],
-            pixels_per_point: egui_support.pixels_per_point,
-        };
-        let mut encoder = draw_context
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         Self::begin_frame(egui_support);
         let egui_context = egui_support.egui_state.egui_ctx();
         run_ui(egui_context);
-        Self::end_frame_and_draw(
-            egui_support,
-            &draw_context.device,
-            &draw_context.queue,
-            &screen_descriptor,
-            &mut encoder,
-            rpass,
-        );
     }
 
     fn begin_frame(egui_support: &mut EguiSupportWithWindow) {
@@ -160,5 +126,49 @@ impl EguiSupport {
         for x in &full_output.textures_delta.free {
             egui_support.egui_renderer.free_texture(x);
         }
+    }
+}
+
+impl Plugin for EguiSupport {
+    fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventState {
+        match self {
+            Self::WithWindow(egui_support) => {
+                let event_response = egui_support
+                    .egui_state
+                    .on_window_event(&egui_support.window, event);
+                EventState {
+                    processed: event_response.consumed,
+                }
+            }
+            Self::NoWindow(_) => EventState::default(),
+        }
+    }
+    fn on_render(
+        &mut self,
+        render_context: &crate::RenderContext,
+        render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
+        let Self::WithWindow(egui_support) = self else {
+            return;
+        };
+        let draw_context = render_context.draw_context;
+        let screen_descriptor = egui_wgpu::ScreenDescriptor {
+            size_in_pixels: [
+                draw_context.surface_config.width,
+                draw_context.surface_config.height,
+            ],
+            pixels_per_point: egui_support.pixels_per_point,
+        };
+        let mut encoder = draw_context
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        Self::end_frame_and_draw(
+            egui_support,
+            &draw_context.device,
+            &draw_context.queue,
+            &screen_descriptor,
+            &mut encoder,
+            render_pass,
+        );
     }
 }

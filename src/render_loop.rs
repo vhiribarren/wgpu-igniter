@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use crate::draw_context::DrawContext;
+use crate::{draw_context::DrawContext, plugins::PluginRegistry};
 use web_time::{Duration, Instant};
 use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
 
@@ -56,12 +56,18 @@ pub struct EventState {
 }
 
 pub trait RenderLoopHandler {
+    fn on_init(&mut self, _plugin_registry: &mut PluginRegistry, _draw_context: &DrawContext) {}
     fn on_mouse_event(&mut self, _event: &DeviceEvent) {}
     fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
     fn on_window_event(&mut self, _event: &WindowEvent) -> EventState {
         EventState::default()
     }
-    fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>);
+    fn on_render(
+        &mut self,
+        plugin_registry: &mut PluginRegistry,
+        render_context: &RenderContext,
+        render_pass: &mut wgpu::RenderPass<'static>,
+    );
     fn is_finished(&self) -> bool {
         false
     }

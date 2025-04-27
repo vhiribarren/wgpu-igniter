@@ -26,6 +26,7 @@ use crate::{
     EventState, RenderLoopHandler,
     cameras::{Camera, InteractiveCamera},
     draw_context::{DrawContext, Drawable, Uniform},
+    plugins::PluginRegistry,
     render_loop::RenderContext,
 };
 use cgmath::{SquareMatrix, Zero};
@@ -143,15 +144,19 @@ impl RenderLoopHandler for SceneLoopScheduler {
         self.scene_loop_handler.on_window_event(event)
     }
 
-    fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
+    fn on_render(
+        &mut self,
+        _plugin_registry: &mut PluginRegistry,
+        render_context: &RenderContext,
+        render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
         let scenario = &mut *self.scene_loop_handler;
         scenario.on_update(render_context);
         let SceneElements { camera, scene } = scenario.scene_elements_mut();
-        let mut rpass = render_pass.forget_lifetime();
         camera.update_screen_size(render_context.draw_context.surface_dimensions());
         camera.update_control();
         scene.update(render_context, &camera.controled_camera);
-        scene.render(&mut rpass);
-        scenario.on_post_render(render_context, &mut rpass);
+        scene.render(render_pass);
+        scenario.on_post_render(render_context, render_pass);
     }
 }
