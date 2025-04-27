@@ -23,7 +23,6 @@ SOFTWARE.
 */
 
 use cgmath::SquareMatrix;
-use wgpu::SurfaceConfiguration;
 use wgpu_igniter::primitives::triangle::{
     TRIANGLE_COLOR, TRIANGLE_GEOMETRY, TRIANGLE_VERTEX_COUNT,
 };

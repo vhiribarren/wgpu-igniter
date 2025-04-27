@@ -80,14 +80,12 @@ impl CameraView {
         let right = self.up.cross(forward);
         let rotation = Matrix3::from_axis_angle(right, Rad(val));
         self.up = rotation * self.up;
-        // TODO To check formula
         let rotated_forward = Matrix3::from_axis_angle(self.up.cross(forward), Rad(val)) * forward;
         self.center = self.eye + rotated_forward * (self.center - self.eye).magnitude();
     }
     pub fn pan(&mut self, val: f32) {
         let forward = (self.center - self.eye).normalize();
         let rotation = Matrix3::from_axis_angle(self.up, Rad(val));
-        // TODO To check formula
         let rotated_forward = rotation * forward;
         self.center = self.eye + rotated_forward * (self.center - self.eye).magnitude();
     }
