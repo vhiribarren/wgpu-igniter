@@ -22,9 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use cgmath::{EuclideanSpace, Matrix, Matrix4, PerspectiveFov, Rad, Vector3, vec3};
+use cgmath::{InnerSpace, Matrix3, Matrix4, PerspectiveFov, Rad, Vector3, vec3};
 use cgmath::{Ortho, Point3};
-use log::{debug, warn};
+use log::warn;
 use std::collections::BTreeSet;
 use std::f32::consts::PI;
 use std::sync::LazyLock;
@@ -37,21 +37,63 @@ static TO_WEBGPU_NDCS: LazyLock<Matrix4<f32>> = LazyLock::new(|| {
     Matrix4::from_translation(vec3(0., 0., 0.5)) * Matrix4::from_nonuniform_scale(1., 1., 0.5)
 });
 
-pub struct OrthogonalConfig {
-    pub width: f32,
-    pub height: f32,
+pub struct CameraView {
     pub eye: Point3<f32>,
     pub center: Point3<f32>,
     pub up: Vector3<f32>,
-    pub near: f32,
-    pub far: f32,
 }
 
-impl Default for OrthogonalConfig {
+impl CameraView {
+    #[must_use]
+    pub fn calc_view_matrix(&self) -> Matrix4<f32> {
+        Matrix4::look_at_lh(self.eye, self.center, self.up)
+    }
+    pub fn move_x(&mut self, val: f32, lock_center: bool) {
+        let right = self.up.cross((self.center - self.eye).normalize());
+        self.eye += right * val;
+        if !lock_center {
+            self.center += right * val;
+        }
+    }
+    pub fn move_y(&mut self, val: f32, lock_center: bool) {
+        self.eye += self.up * val;
+        if !lock_center {
+            self.center += self.up * val;
+        }
+    }
+    pub fn move_z(&mut self, val: f32, lock_center: bool) {
+        let forward = (self.center - self.eye).normalize();
+        self.eye += forward * val;
+        if !lock_center {
+            self.center += forward * val;
+        }
+    }
+    pub fn roll(&mut self, val: f32) {
+        let forward = (self.center - self.eye).normalize();
+        let rotation = Matrix3::from_axis_angle(forward, Rad(val));
+        self.up = rotation * self.up;
+    }
+    pub fn tilt(&mut self, val: f32) {
+        let forward = (self.center - self.eye).normalize();
+        let right = self.up.cross(forward);
+        let rotation = Matrix3::from_axis_angle(right, Rad(val));
+        self.up = rotation * self.up;
+        // TODO To check formula
+        let rotated_forward = Matrix3::from_axis_angle(self.up.cross(forward), Rad(val)) * forward;
+        self.center = self.eye + rotated_forward * (self.center - self.eye).magnitude();
+    }
+    pub fn pan(&mut self, val: f32) {
+        let forward = (self.center - self.eye).normalize();
+        let rotation = Matrix3::from_axis_angle(self.up, Rad(val));
+        // TODO To check formula
+        let rotated_forward = rotation * forward;
+        self.center = self.eye + rotated_forward * (self.center - self.eye).magnitude();
+    }
+}
+
+impl Default for CameraView {
     fn default() -> Self {
         Self {
-            width: 16.0 / 4.0,
-            height: 9.0 / 4.0,
             eye: Point3 {
                 x: 0.0,
                 y: 0.0,
@@ -67,122 +109,158 @@ impl Default for OrthogonalConfig {
                 y: 1.0,
                 z: 0.0,
             },
+        }
+    }
+}
+
+pub trait CameraProjection {
+    fn calc_projection(&self) -> Matrix4<f32>;
+    fn resize_screen(&mut self, width: u32, height: u32);
+}
+
+pub struct OrthogonalCameraConfig {
+    pub width: f32,
+    pub height: f32,
+    pub near: f32,
+    pub far: f32,
+}
+
+impl CameraProjection for OrthogonalCameraConfig {
+    fn calc_projection(&self) -> Matrix4<f32> {
+        Matrix4::from(Ortho {
+            left: -self.width / 2.0,
+            right: self.width / 2.0,
+            bottom: -self.height / 2.0,
+            top: self.height / 2.0,
+            near: self.near,
+            far: self.far,
+        })
+    }
+    #[allow(clippy::cast_precision_loss)]
+    fn resize_screen(&mut self, width: u32, height: u32) {
+        self.width = width as f32;
+        self.height = height as f32;
+    }
+}
+
+impl Default for OrthogonalCameraConfig {
+    fn default() -> Self {
+        Self {
+            width: 16.0 / 4.0,
+            height: 9.0 / 4.0,
             near: 0.,
             far: 1_000.0,
         }
     }
 }
 
-impl From<OrthogonalConfig> for Camera {
-    fn from(config: OrthogonalConfig) -> Self {
-        Self {
-            projection: Matrix4::from(Ortho {
-                left: -config.width / 2.0,
-                right: config.width / 2.0,
-                bottom: -config.height / 2.0,
-                top: config.height / 2.0,
-                near: config.near,
-                far: config.far,
-            }),
-            view: Matrix4::look_at_lh(config.eye, config.center, config.up),
-        }
-    }
-}
-
-pub struct PerspectiveConfig {
+pub struct PerspectiveCameraConfig {
     pub fovy: f32,
     pub aspect: f32,
-    pub eye: Point3<f32>,
-    pub center: Point3<f32>,
-    pub up: Vector3<f32>,
     pub near: f32,
     pub far: f32,
 }
 
-impl Default for PerspectiveConfig {
+impl Default for PerspectiveCameraConfig {
     fn default() -> Self {
         Self {
             fovy: PI / 4.0,
             aspect: 16. / 9.,
             near: 0.1,
             far: 1_000.0,
-            eye: Point3 {
-                x: 0.0,
-                y: 0.0,
-                z: -5.0,
-            },
-            center: Point3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            up: Vector3 {
-                x: 0.0,
-                y: 1.0,
-                z: 0.0,
-            },
         }
     }
 }
 
-impl From<PerspectiveConfig> for Camera {
-    fn from(config: PerspectiveConfig) -> Self {
-        Self {
-            projection: Matrix4::from(PerspectiveFov {
-                fovy: Rad(config.fovy),
-                aspect: config.aspect,
-                near: config.near,
-                far: config.far,
-            }),
-            view: Matrix4::look_at_lh(config.eye, config.center, config.up),
-        }
+impl CameraProjection for PerspectiveCameraConfig {
+    fn calc_projection(&self) -> Matrix4<f32> {
+        Matrix4::from(PerspectiveFov {
+            fovy: Rad(self.fovy),
+            aspect: self.aspect,
+            near: self.near,
+            far: self.far,
+        })
+    }
+    #[allow(clippy::cast_precision_loss)]
+    fn resize_screen(&mut self, width: u32, height: u32) {
+        self.aspect = width as f32 / height as f32;
     }
 }
 
-#[derive(Debug, Clone)]
 pub struct Camera {
-    pub projection: Matrix4<f32>,
-    pub view: Matrix4<f32>,
+    projection: Box<dyn CameraProjection>,
+    view: CameraView,
+    projection_cache: Matrix4<f32>,
+    view_cache: Matrix4<f32>,
 }
 
+impl Default for Camera {
+    fn default() -> Self {
+        Self::new(
+            CameraView::default(),
+            Box::new(PerspectiveCameraConfig::default()),
+        )
+    }
+}
+// TODO Provide method to replace the project and the view directly
 impl Camera {
     #[must_use]
-    pub fn get_camera_matrix(&self) -> Matrix4<f32> {
-        (*TO_WEBGPU_NDCS) * self.projection * (*SWITCH_Z_AXIS) * self.view
+    pub fn new(view: CameraView, projection: Box<dyn CameraProjection>) -> Self {
+        let view_cache = view.calc_view_matrix();
+        let projection_cache = projection.calc_projection();
+        Self {
+            projection,
+            view,
+            projection_cache,
+            view_cache,
+        }
+    }
+    fn update_view_cache(&mut self) {
+        self.view_cache = self.view.calc_view_matrix();
+    }
+    fn update_projection_cache(&mut self) {
+        self.projection_cache = self.projection.calc_projection();
+    }
+    pub fn resize_screen(&mut self, width: u32, height: u32) {
+        self.projection.resize_screen(width, height);
+        self.update_projection_cache();
     }
     #[must_use]
-    pub fn get_eye_position(&self) -> Point3<f32> {
-        let view = self.view;
-        let rotation = cgmath::Matrix3::new(
-            view[0][0], view[0][1], view[0][2], view[1][0], view[1][1], view[1][2], view[2][0],
-            view[2][1], view[2][2],
-        );
-        let translation = Vector3::new(view[0][3], view[1][3], view[2][3]);
-        let camera_position = -rotation.transpose() * translation;
-        Point3::from_vec(camera_position)
+    pub fn get_camera_matrix(&self) -> Matrix4<f32> {
+        (*TO_WEBGPU_NDCS) * self.projection_cache * (*SWITCH_Z_AXIS) * self.view_cache
+    }
+    #[must_use]
+    pub fn eye_position(&self) -> Point3<f32> {
+        self.view.eye
     }
     pub fn move_z(&mut self, val: f32) {
-        self.view = Matrix4::from_translation(Vector3::new(0., 0., -val)) * self.view;
+        self.view.move_z(val, false);
+        self.update_view_cache();
     }
     pub fn move_x(&mut self, val: f32) {
-        self.view = Matrix4::from_translation(Vector3::new(-val, 0., 0.)) * self.view;
+        self.view.move_x(val, false);
+        self.update_view_cache();
     }
     pub fn move_y(&mut self, val: f32) {
-        self.view = Matrix4::from_translation(Vector3::new(0., -val, 0.)) * self.view;
+        self.view.move_y(val, false);
+        self.update_view_cache();
     }
     pub fn pan(&mut self, val: f32) {
-        self.view = Matrix4::from_angle_y(Rad(-val)) * self.view;
+        self.view.pan(val);
+        self.update_view_cache();
     }
     pub fn tilt(&mut self, val: f32) {
-        self.view = Matrix4::from_angle_x(Rad(-val)) * self.view;
+        self.view.tilt(val);
+        self.update_view_cache();
     }
     pub fn roll(&mut self, val: f32) {
-        self.view = Matrix4::from_angle_z(Rad(-val)) * self.view;
+        self.view.roll(val);
+        self.update_view_cache();
     }
 }
 
 pub struct InteractiveCamera {
-    pub camera: Camera,
+    pub controled_camera: Camera,
     enabled_keys: BTreeSet<KeyCode>,
     key_speed: f32,
     rotation_speed: f32,
@@ -196,7 +274,7 @@ impl InteractiveCamera {
     #[must_use]
     pub fn new(camera: Camera) -> Self {
         Self {
-            camera,
+            controled_camera: camera,
             enabled_keys: BTreeSet::new(),
             key_speed: Self::DEFAULT_KEY_SPEED,
             rotation_speed: Self::DEFAULT_ROTATION_SPEED,
@@ -205,15 +283,21 @@ impl InteractiveCamera {
 
     #[must_use]
     pub fn get_camera_matrix(&self) -> Matrix4<f32> {
-        self.camera.get_camera_matrix()
+        self.controled_camera.get_camera_matrix()
+    }
+
+    pub fn update_screen_size(&mut self, width: u32, height: u32) {
+        self.controled_camera.resize_screen(width, height);
     }
 
     #[allow(clippy::cast_possible_truncation)]
     pub fn mouse_event_listener(&mut self, event: &DeviceEvent) {
         match event {
             DeviceEvent::MouseMotion { delta } => {
-                self.camera.pan(delta.0 as f32 * self.rotation_speed);
-                self.camera.tilt(delta.1 as f32 * self.rotation_speed);
+                self.controled_camera
+                    .pan(delta.0 as f32 * self.rotation_speed);
+                self.controled_camera
+                    .tilt(delta.1 as f32 * self.rotation_speed);
             }
             DeviceEvent::MouseWheel {
                 delta: _scroll_delta,
@@ -246,23 +330,22 @@ impl InteractiveCamera {
         }
         for key in &self.enabled_keys {
             match *key {
-                KeyCode::ArrowUp => self.camera.move_z(key_speed),
-                KeyCode::ArrowDown => self.camera.move_z(-key_speed),
-                KeyCode::ArrowLeft => self.camera.move_x(-key_speed),
-                KeyCode::ArrowRight => self.camera.move_x(key_speed),
-                KeyCode::PageUp => self.camera.move_y(key_speed),
-                KeyCode::PageDown => self.camera.move_y(-key_speed),
-                KeyCode::Home => self.camera.roll(-key_speed / 2.0),
-                KeyCode::End => self.camera.roll(key_speed / 2.0),
+                KeyCode::ArrowUp => self.controled_camera.move_z(key_speed),
+                KeyCode::ArrowDown => self.controled_camera.move_z(-key_speed),
+                KeyCode::ArrowLeft => self.controled_camera.move_x(-key_speed),
+                KeyCode::ArrowRight => self.controled_camera.move_x(key_speed),
+                KeyCode::PageUp => self.controled_camera.move_y(key_speed),
+                KeyCode::PageDown => self.controled_camera.move_y(-key_speed),
+                KeyCode::Home => self.controled_camera.roll(-key_speed / 2.0),
+                KeyCode::End => self.controled_camera.roll(key_speed / 2.0),
                 _ => {}
             }
         }
-        debug!("{:?}", -self.as_ref().view);
     }
 }
 
 impl AsRef<Camera> for InteractiveCamera {
     fn as_ref(&self) -> &Camera {
-        &self.camera
+        &self.controled_camera
     }
 }

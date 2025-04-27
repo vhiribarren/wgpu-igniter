@@ -24,7 +24,7 @@ SOFTWARE.
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use wgpu_igniter::cameras::{InteractiveCamera, PerspectiveConfig};
+use wgpu_igniter::cameras::{Camera, InteractiveCamera};
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
 use wgpu_igniter::{DrawContext, RenderContext};
@@ -49,7 +49,7 @@ pub struct MainScenario {
 
 impl MainScenario {
     pub fn new(draw_context: &DrawContext) -> Self {
-        let camera = InteractiveCamera::new(PerspectiveConfig::default().into());
+        let camera = InteractiveCamera::new(Camera::default());
         let mut scene = Scene3D::new(draw_context);
         let interpolated_shader_module = draw_context.create_shader_module(INTERPOLATED_SHADER);
         let flat_shader_module = draw_context.create_shader_module(FLAT_SHADER);

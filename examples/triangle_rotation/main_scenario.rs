@@ -80,14 +80,11 @@ impl MainScenario {
 
 impl RenderLoopHandler for MainScenario {
     fn on_render(&mut self, render_context: &RenderContext, mut render_pass: wgpu::RenderPass<'_>) {
-        let SurfaceConfiguration { width, height, .. } = render_context.draw_context.surface_config;
-        // NOTE Case where there is no screen?
-        // NOTE Better accessor to screen size as functions from draw_context?
-        let screen_ratio = height as f32 / width as f32;
-        let scale_factor = if screen_ratio < 1.0 {
-            cgmath::Matrix4::from_nonuniform_scale(screen_ratio, 1.0, 1.0)
+        let screen_ratio = render_context.draw_context.surface_ratio();
+        let scale_factor = if screen_ratio > 1.0 {
+            cgmath::Matrix4::from_nonuniform_scale(1.0 / screen_ratio, 1.0, 1.0)
         } else {
-            cgmath::Matrix4::from_nonuniform_scale(1.0, 1.0 / screen_ratio, 1.0)
+            cgmath::Matrix4::from_nonuniform_scale(1.0, screen_ratio, 1.0)
         };
         let total_seconds = render_context.time_info.init_start.elapsed().as_secs_f32();
         let new_rotation = ROTATION_DEG_PER_S * total_seconds;

@@ -890,6 +890,22 @@ impl DrawContext {
             .create_multisample_texture(&self.surface_config, &self.multisample_config);
     }
 
+    #[allow(clippy::cast_precision_loss)]
+    pub fn surface_ratio(&self) -> f32 {
+        if self.surface_config.height > 0 {
+            self.surface_config.width as f32 / self.surface_config.height as f32
+        } else {
+            1.0
+        }
+    }
+
+    pub fn surface_size(&self) -> Dimensions {
+        Dimensions {
+            width: self.surface_config.width,
+            height: self.surface_config.height,
+        }
+    }
+
     pub fn render_scene<C>(&self, callback: C) -> anyhow::Result<()>
     where
         C: FnOnce(wgpu::RenderPass<'_>),

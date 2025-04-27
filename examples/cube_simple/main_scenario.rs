@@ -23,10 +23,10 @@ SOFTWARE.
 */
 
 use std::rc::Rc;
-use wgpu_igniter::cameras::{InteractiveCamera, PerspectiveConfig};
+use wgpu_igniter::cameras::{Camera, InteractiveCamera};
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
-use wgpu_igniter::{DrawContext, RenderContext};
+use wgpu_igniter::{Dimensions, DrawContext, RenderContext};
 
 const DEFAULT_SHADER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -42,7 +42,7 @@ pub struct MainScenario {
 
 impl MainScenario {
     pub fn new(draw_context: &DrawContext) -> Self {
-        let camera = InteractiveCamera::new(PerspectiveConfig::default().into());
+        let camera = InteractiveCamera::new(Camera::default());
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut scene = Scene3D::new(draw_context);
         let cube = cube::create_cube_with_colors(
@@ -68,6 +68,11 @@ impl SceneLoopHandler for MainScenario {
     }
 
     fn on_update(&mut self, context: &RenderContext) {
+        let Dimensions { width, height } = context.draw_context.surface_size();
+        self.scene_elements
+            .camera
+            .controled_camera
+            .resize_screen(width, height);
         let total_seconds = context.time_info.init_start.elapsed().as_secs_f32();
         let new_rotation = ROTATION_DEG_PER_S * total_seconds;
         // Translation on z to be in the clipped space (between -w and w) and camera in front of the cube

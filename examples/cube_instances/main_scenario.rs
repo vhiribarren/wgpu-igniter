@@ -25,7 +25,7 @@ SOFTWARE.
 use cgmath::Rotation3;
 use std::cell::RefCell;
 use std::rc::Rc;
-use wgpu_igniter::cameras::{InteractiveCamera, PerspectiveConfig};
+use wgpu_igniter::cameras::{Camera, InteractiveCamera};
 use wgpu_igniter::primitives::cube::CubeOptions;
 use wgpu_igniter::primitives::{Object3DInstanceGroup, Shareable, cube};
 use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
@@ -44,7 +44,7 @@ pub struct MainScenario {
 impl MainScenario {
     pub fn new(draw_context: &mut DrawContext) -> Self {
         draw_context.set_clear_color(Some(wgpu::Color::BLACK));
-        let camera = InteractiveCamera::new(PerspectiveConfig::default().into());
+        let camera = InteractiveCamera::new(Camera::default());
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut scene = Scene3D::new(draw_context);
         let cube = {

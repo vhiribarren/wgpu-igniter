@@ -23,7 +23,7 @@ SOFTWARE.
 */
 
 use std::rc::Rc;
-use wgpu_igniter::cameras::{InteractiveCamera, PerspectiveConfig};
+use wgpu_igniter::cameras::{Camera, InteractiveCamera};
 use wgpu_igniter::primitives::cube::CubeOptions;
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
@@ -71,7 +71,7 @@ impl MainScenario {
             pixels_per_point: egui_support.get_pixels_per_point(),
             anim_speed: 1.0,
         };
-        let camera = InteractiveCamera::new(PerspectiveConfig::default().into());
+        let camera = InteractiveCamera::new(Camera::default());
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut scene = Scene3D::new(draw_context);
         let cube = cube::create_cube_with_colors(

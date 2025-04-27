@@ -68,7 +68,7 @@ impl Scene3D {
             .write_uniform(camera.get_camera_matrix().into());
         self.scene_uniforms
             .camera_pos
-            .write_uniform(camera.get_eye_position().into());
+            .write_uniform(camera.eye_position().into());
     }
 
     pub fn add(&mut self, element: DrawableWrapper) {
@@ -149,7 +149,7 @@ impl RenderLoopHandler for SceneLoopScheduler {
         let SceneElements { camera, scene } = scenario.scene_elements_mut();
         let mut rpass = render_pass.forget_lifetime();
         camera.update();
-        scene.update(render_context, &camera.camera);
+        scene.update(render_context, &camera.controled_camera);
         scene.render(&mut rpass);
         scenario.on_post_render(render_context, &mut rpass);
     }
