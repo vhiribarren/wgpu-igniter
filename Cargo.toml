@@ -24,6 +24,7 @@ web-time = "1.1.0"
 rayon = "1.10.0"
 egui = { version = "0.31.1", optional = true }
 egui-wgpu = { version = "0.31.1", optional = true }
+indexmap = "2.9.0"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 egui-winit = { version = "0.31.1", optional = true }
