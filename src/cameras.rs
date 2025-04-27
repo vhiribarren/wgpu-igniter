@@ -31,6 +31,8 @@ use std::sync::LazyLock;
 use winit::event::{DeviceEvent, ElementState, KeyEvent};
 use winit::keyboard::{KeyCode, PhysicalKey};
 
+use crate::Dimensions;
+
 static SWITCH_Z_AXIS: LazyLock<Matrix4<f32>> =
     LazyLock::new(|| Matrix4::from_nonuniform_scale(1., 1., -1.));
 static TO_WEBGPU_NDCS: LazyLock<Matrix4<f32>> = LazyLock::new(|| {
@@ -115,7 +117,7 @@ impl Default for CameraView {
 
 pub trait CameraProjection {
     fn calc_projection(&self) -> Matrix4<f32>;
-    fn resize_screen(&mut self, width: u32, height: u32);
+    fn resize_screen(&mut self, dimensions: Dimensions);
 }
 
 pub struct OrthogonalCameraConfig {
@@ -137,9 +139,9 @@ impl CameraProjection for OrthogonalCameraConfig {
         })
     }
     #[allow(clippy::cast_precision_loss)]
-    fn resize_screen(&mut self, width: u32, height: u32) {
-        self.width = width as f32;
-        self.height = height as f32;
+    fn resize_screen(&mut self, dimensions: Dimensions) {
+        self.width = dimensions.width as f32;
+        self.height = dimensions.height as f32;
     }
 }
 
@@ -182,8 +184,8 @@ impl CameraProjection for PerspectiveCameraConfig {
         })
     }
     #[allow(clippy::cast_precision_loss)]
-    fn resize_screen(&mut self, width: u32, height: u32) {
-        self.aspect = width as f32 / height as f32;
+    fn resize_screen(&mut self, dimensions: Dimensions) {
+        self.aspect = dimensions.width as f32 / dimensions.height as f32;
     }
 }
 
@@ -221,8 +223,8 @@ impl Camera {
     fn update_projection_cache(&mut self) {
         self.projection_cache = self.projection.calc_projection();
     }
-    pub fn resize_screen(&mut self, width: u32, height: u32) {
-        self.projection.resize_screen(width, height);
+    pub fn resize_screen(&mut self, dimensions: Dimensions) {
+        self.projection.resize_screen(dimensions);
         self.update_projection_cache();
     }
     #[must_use]
@@ -286,8 +288,8 @@ impl InteractiveCamera {
         self.controled_camera.get_camera_matrix()
     }
 
-    pub fn update_screen_size(&mut self, width: u32, height: u32) {
-        self.controled_camera.resize_screen(width, height);
+    pub fn update_screen_size(&mut self, dimensions: Dimensions) {
+        self.controled_camera.resize_screen(dimensions);
     }
 
     #[allow(clippy::cast_possible_truncation)]
@@ -318,7 +320,7 @@ impl InteractiveCamera {
         }
     }
 
-    pub fn update(&mut self) {
+    pub fn update_control(&mut self) {
         if self.enabled_keys.is_empty() {
             return;
         }

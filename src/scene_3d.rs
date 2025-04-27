@@ -148,7 +148,8 @@ impl RenderLoopHandler for SceneLoopScheduler {
         scenario.on_update(render_context);
         let SceneElements { camera, scene } = scenario.scene_elements_mut();
         let mut rpass = render_pass.forget_lifetime();
-        camera.update();
+        camera.update_screen_size(render_context.draw_context.surface_dimensions());
+        camera.update_control();
         scene.update(render_context, &camera.controled_camera);
         scene.render(&mut rpass);
         scenario.on_post_render(render_context, &mut rpass);

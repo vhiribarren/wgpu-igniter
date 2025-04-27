@@ -899,7 +899,7 @@ impl DrawContext {
         }
     }
 
-    pub fn surface_size(&self) -> Dimensions {
+    pub fn surface_dimensions(&self) -> Dimensions {
         Dimensions {
             width: self.surface_config.width,
             height: self.surface_config.height,
