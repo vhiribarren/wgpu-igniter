@@ -27,7 +27,7 @@ use wgpu_igniter::primitives::triangle::{
     TRIANGLE_COLOR, TRIANGLE_GEOMETRY, TRIANGLE_VERTEX_COUNT,
 };
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, RenderContext, RenderLoopHandler,
+    DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext, RenderLoopHandler,
     Uniform,
 };
 
@@ -41,7 +41,7 @@ pub struct MainScenario {
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &DrawContext) -> Self {
+    pub fn new(LaunchContext { draw_context, .. }: LaunchContext) -> Self {
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let transform_uniform = Uniform::new(draw_context, cgmath::Matrix4::identity().into());
         let mut drawable_builder = DrawableBuilder::new(
@@ -78,7 +78,12 @@ impl MainScenario {
 }
 
 impl RenderLoopHandler for MainScenario {
-    fn on_render(&mut self, render_context: &RenderContext, mut render_pass: wgpu::RenderPass<'_>) {
+    fn on_render(
+        &mut self,
+        _plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
+        render_context: &RenderContext,
+        render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
         let screen_ratio = render_context.draw_context.surface_ratio();
         let scale_factor = if screen_ratio > 1.0 {
             cgmath::Matrix4::from_nonuniform_scale(1.0 / screen_ratio, 1.0, 1.0)
@@ -92,6 +97,6 @@ impl RenderLoopHandler for MainScenario {
             * cgmath::Matrix4::from_angle_z(cgmath::Deg(new_rotation));
         self.transform_uniform.write_uniform(transform.into());
 
-        self.triangle.render(&mut render_pass);
+        self.triangle.render(render_pass);
     }
 }

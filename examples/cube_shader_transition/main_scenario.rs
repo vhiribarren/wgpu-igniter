@@ -26,10 +26,10 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use web_time::Duration;
 use wgpu_igniter::cameras::{Camera, InteractiveCamera};
+use wgpu_igniter::plugins::scene_3d::{Scene3D, SceneElements};
 use wgpu_igniter::primitives::cube::CubeOptions;
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
-use wgpu_igniter::{DrawContext, RenderContext};
+use wgpu_igniter::{LaunchContext, RenderContext, RenderLoopHandler};
 
 const INTERPOLATED_SHADER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -47,11 +47,15 @@ const SHADER_TRANSITION_PERIOD: Duration = Duration::from_secs(1);
 pub struct MainScenario {
     pub cube_interpolated: Rc<RefCell<Object3D>>,
     pub cube_flat: Rc<RefCell<Object3D>>,
-    pub scene_elements: SceneElements,
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &DrawContext) -> Self {
+    pub fn new(
+        LaunchContext {
+            draw_context,
+            plugin_registry,
+        }: LaunchContext,
+    ) -> Self {
         let camera = InteractiveCamera::new(Camera::default());
         let interpolated_shader_module = draw_context.create_shader_module(INTERPOLATED_SHADER);
         let flat_shader_module = draw_context.create_shader_module(FLAT_SHADER);
@@ -79,22 +83,23 @@ impl MainScenario {
         scene.add(cube_interpolated.clone());
         scene.add(cube_flat.clone());
 
-        let scene_elements = SceneElements { camera, scene };
+        plugin_registry.register(SceneElements { camera, scene });
+
         Self {
             cube_interpolated,
             cube_flat,
-            scene_elements,
         }
     }
 }
 
-impl SceneLoopHandler for MainScenario {
-    fn scene_elements_mut(&mut self) -> &mut SceneElements {
-        &mut self.scene_elements
-    }
-
-    fn on_update(&mut self, update_context: &RenderContext) {
-        let update_interval = update_context.time_info;
+impl RenderLoopHandler for MainScenario {
+    fn on_render(
+        &mut self,
+        _plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
+        render_context: &RenderContext,
+        _render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
+        let update_interval = render_context.time_info;
         let delta_rotation = ROTATION_DEG_PER_S * update_interval.processing_delta.as_secs_f32();
         let transform = cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation))
             * cgmath::Matrix4::from_angle_y(cgmath::Deg(delta_rotation));

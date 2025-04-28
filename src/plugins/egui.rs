@@ -143,6 +143,12 @@ impl Plugin for EguiSupport {
             Self::NoWindow(_) => EventState::default(),
         }
     }
+    fn on_mouse_event(&mut self, _event: &winit::event::DeviceEvent) -> EventState {
+        if self.egui_context().is_using_pointer() {
+            return EventState { processed: true };
+        }
+        EventState::default()
+    }
     fn on_render(
         &mut self,
         render_context: &crate::RenderContext,

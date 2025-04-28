@@ -25,9 +25,9 @@ SOFTWARE.
 use std::cell::RefCell;
 use std::rc::Rc;
 use wgpu_igniter::cameras::{Camera, InteractiveCamera};
+use wgpu_igniter::plugins::scene_3d::{Scene3D, SceneElements};
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
-use wgpu_igniter::{DrawContext, RenderContext};
+use wgpu_igniter::{LaunchContext, RenderContext, RenderLoopHandler};
 
 const INTERPOLATED_SHADER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -44,11 +44,15 @@ const ROTATION_DEG_PER_S: f32 = 45.0;
 pub struct MainScenario {
     cube_left: Rc<RefCell<Object3D>>,
     cube_right: Rc<RefCell<Object3D>>,
-    scene_elements: SceneElements,
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &DrawContext) -> Self {
+    pub fn new(
+        LaunchContext {
+            draw_context,
+            plugin_registry,
+        }: LaunchContext,
+    ) -> Self {
         let camera = InteractiveCamera::new(Camera::default());
         let mut scene = Scene3D::new(draw_context);
         let interpolated_shader_module = draw_context.create_shader_module(INTERPOLATED_SHADER);
@@ -82,23 +86,24 @@ impl MainScenario {
         scene.add(cube_left.clone());
         scene.add(cube_right.clone());
 
-        let scene_elements = SceneElements { camera, scene };
+        plugin_registry.register(SceneElements { camera, scene });
+
         Self {
             cube_left,
             cube_right,
-            scene_elements,
         }
     }
 }
 
-impl SceneLoopHandler for MainScenario {
-    fn scene_elements_mut(&mut self) -> &mut SceneElements {
-        &mut self.scene_elements
-    }
-
-    fn on_update(&mut self, update_context: &RenderContext) {
+impl RenderLoopHandler for MainScenario {
+    fn on_render(
+        &mut self,
+        _plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
+        render_context: &RenderContext,
+        _render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
         let delta_rotation =
-            ROTATION_DEG_PER_S * update_context.time_info.processing_delta.as_secs_f32();
+            ROTATION_DEG_PER_S * render_context.time_info.processing_delta.as_secs_f32();
         self.cube_left
             .borrow_mut()
             .apply_transform(cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation)));

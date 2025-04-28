@@ -23,6 +23,7 @@ SOFTWARE.
 */
 
 use crate::{
+    EventState,
     cameras::{Camera, InteractiveCamera},
     draw_context::{DrawContext, Drawable, Uniform},
     render_loop::RenderContext,
@@ -94,8 +95,9 @@ pub struct SceneElements {
 }
 
 impl Plugin for SceneElements {
-    fn on_mouse_event(&mut self, event: &DeviceEvent) {
+    fn on_mouse_event(&mut self, event: &DeviceEvent) -> EventState {
         self.camera.mouse_event_listener(event);
+        EventState { processed: true }
     }
     fn on_keyboard_event(&mut self, event: &KeyEvent) {
         self.camera.keyboard_event_listener(event);

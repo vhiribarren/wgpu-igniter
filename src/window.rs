@@ -112,13 +112,14 @@ impl App {
         let last_draw_instant = scenario_start;
         let last_fps_instant = scenario_start;
         let draw_period_target = Duration::from_secs_f64(1.0 / TARGET_DRAW_FPS);
-        let draw_context = draw_context::DrawContext::new(Some(Arc::clone(&window)), dimensions)
-            .await
-            .unwrap();
+        let mut draw_context =
+            draw_context::DrawContext::new(Some(Arc::clone(&window)), dimensions)
+                .await
+                .unwrap();
 
         let mut plugin_registry = PluginRegistry::default();
         let scenario = builder(LaunchContext {
-            draw_context: &draw_context,
+            draw_context: &mut draw_context,
             plugin_registry: &mut plugin_registry,
         });
         Self {
@@ -305,7 +306,10 @@ impl ApplicationHandler<App> for AppHandlerState {
         }
         if app.mouse_state.is_mouse_rotation_enabled() {
             for listener in app.plugin_registry.iter_mut_rev() {
-                listener.on_mouse_event(&event);
+                let event_state = listener.on_mouse_event(&event);
+                if event_state.processed {
+                    return;
+                }
             }
             app.scenario.on_mouse_event(&event);
         }

@@ -34,7 +34,9 @@ pub mod egui;
 pub mod scene_3d;
 
 pub trait Plugin: Any {
-    fn on_mouse_event(&mut self, _event: &DeviceEvent) {}
+    fn on_mouse_event(&mut self, _event: &DeviceEvent) -> EventState {
+        EventState::default()
+    }
     fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
     fn on_window_event(&mut self, _event: &WindowEvent) -> EventState {
         EventState::default()
@@ -76,6 +78,7 @@ impl PluginRegistry {
             .get(&TypeId::of::<T>())
             .and_then(|plugin| plugin.as_ref().downcast_ref::<T>())
     }
+    // TODO will need to allow multiple borrows at the same time
     #[must_use]
     pub fn get_mut<T: Plugin + 'static>(&mut self) -> Option<&mut T> {
         self.plugins

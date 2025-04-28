@@ -25,8 +25,8 @@ SOFTWARE.
 use wgpu_igniter::plugins::egui::EguiSupport;
 use wgpu_igniter::plugins::{Plugin, PluginRegistry};
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, EventState, LaunchContext,
-    RenderContext, RenderLoopHandler, Uniform,
+    DrawModeParams, Drawable, DrawableBuilder, EventState, LaunchContext, RenderContext,
+    RenderLoopHandler, Uniform,
 };
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");
@@ -88,13 +88,12 @@ impl RenderLoopHandler for MainScenario {
     }
     fn on_render(
         &mut self,
-        plugins: &mut PluginRegistry,
+        _plugins: &mut PluginRegistry,
         render_context: &RenderContext,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
         let &RenderContext {
             time_info: update_interval,
-            draw_context,
             ..
         } = render_context;
         self.egui_support

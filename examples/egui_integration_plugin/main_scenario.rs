@@ -25,8 +25,8 @@ SOFTWARE.
 use wgpu_igniter::plugins::PluginRegistry;
 use wgpu_igniter::plugins::egui::EguiSupport;
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext,
-    RenderLoopHandler, Uniform,
+    DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext, RenderLoopHandler,
+    Uniform,
 };
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");

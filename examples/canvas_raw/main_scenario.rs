@@ -23,7 +23,7 @@ SOFTWARE.
 */
 
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, RenderContext, RenderLoopHandler,
+    DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext, RenderLoopHandler,
     Uniform,
 };
 
@@ -35,7 +35,7 @@ pub struct MainScenario {
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &DrawContext) -> Self {
+    pub fn new(LaunchContext { draw_context, .. }: LaunchContext) -> Self {
         let time_uniform = Uniform::new(draw_context, 0f32);
         let shader_module = draw_context.create_shader_module(CANVAS_STATIC_SHADER);
         let mut drawable_builder = DrawableBuilder::new(
@@ -56,13 +56,18 @@ impl MainScenario {
 }
 
 impl RenderLoopHandler for MainScenario {
-    fn on_render(&mut self, render_context: &RenderContext, mut render_pass: wgpu::RenderPass<'_>) {
+    fn on_render(
+        &mut self,
+        _plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
+        render_context: &RenderContext,
+        render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
         let &RenderContext {
             time_info: update_interval,
             ..
         } = render_context;
         self.time_uniform
             .write_uniform(update_interval.init_start.elapsed().as_secs_f32());
-        self.canvas.render(&mut render_pass);
+        self.canvas.render(render_pass);
     }
 }

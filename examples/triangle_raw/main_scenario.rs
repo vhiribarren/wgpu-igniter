@@ -26,7 +26,7 @@ use wgpu_igniter::primitives::triangle::{
     TRIANGLE_COLOR, TRIANGLE_GEOMETRY, TRIANGLE_VERTEX_COUNT,
 };
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, RenderContext, RenderLoopHandler,
+    DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext, RenderLoopHandler,
 };
 
 const DEFAULT_SHADER: &str = include_str!("./triangle_raw.wgsl");
@@ -36,7 +36,7 @@ pub struct MainScenario {
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &DrawContext) -> Self {
+    pub fn new(LaunchContext { draw_context, .. }: LaunchContext) -> Self {
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut drawable_builder = DrawableBuilder::new(
             draw_context,
@@ -69,9 +69,10 @@ impl MainScenario {
 impl RenderLoopHandler for MainScenario {
     fn on_render(
         &mut self,
+        _plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
         _render_context: &RenderContext,
-        mut render_pass: wgpu::RenderPass<'_>,
+        render_pass: &mut wgpu::RenderPass<'static>,
     ) {
-        self.triangle.render(&mut render_pass);
+        self.triangle.render(render_pass);
     }
 }

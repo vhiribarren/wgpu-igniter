@@ -73,7 +73,7 @@ pub trait RenderLoopHandler {
 }
 
 pub struct LaunchContext<'a> {
-    pub draw_context: &'a DrawContext,
+    pub draw_context: &'a mut DrawContext,
     pub plugin_registry: &'a mut PluginRegistry,
 }
 

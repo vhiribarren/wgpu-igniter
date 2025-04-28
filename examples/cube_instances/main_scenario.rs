@@ -26,10 +26,10 @@ use cgmath::Rotation3;
 use std::cell::RefCell;
 use std::rc::Rc;
 use wgpu_igniter::cameras::{Camera, InteractiveCamera};
+use wgpu_igniter::plugins::scene_3d::{Scene3D, SceneElements};
 use wgpu_igniter::primitives::cube::CubeOptions;
 use wgpu_igniter::primitives::{Object3DInstanceGroup, Shareable, cube};
-use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
-use wgpu_igniter::{DrawContext, RenderContext};
+use wgpu_igniter::{LaunchContext, RenderContext, RenderLoopHandler};
 
 const DEFAULT_SHADER: &str = include_str!("cube_instances.wgsl");
 const CUBE_WIDTH_COUNT: usize = 50;
@@ -38,11 +38,15 @@ const CUBE_OFFSET: f32 = 2.0;
 
 pub struct MainScenario {
     pub cube: Rc<RefCell<Object3DInstanceGroup>>,
-    pub scene_elements: SceneElements,
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &mut DrawContext) -> Self {
+    pub fn new(
+        LaunchContext {
+            draw_context,
+            plugin_registry,
+        }: LaunchContext,
+    ) -> Self {
         draw_context.set_clear_color(Some(wgpu::Color::BLACK));
         let camera = InteractiveCamera::new(Camera::default());
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
@@ -74,20 +78,18 @@ impl MainScenario {
             cube_init.into_shareable()
         };
         scene.add(cube.clone());
-        let scene_elements = SceneElements { camera, scene };
-        Self {
-            cube,
-            scene_elements,
-        }
+        plugin_registry.register(SceneElements { camera, scene });
+        Self { cube }
     }
 }
 
-impl SceneLoopHandler for MainScenario {
-    fn scene_elements_mut(&mut self) -> &mut SceneElements {
-        &mut self.scene_elements
-    }
-
-    fn on_update(&mut self, render_context: &RenderContext) {
+impl RenderLoopHandler for MainScenario {
+    fn on_render(
+        &mut self,
+        _plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
+        render_context: &RenderContext,
+        _render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
         let &RenderContext {
             time_info: render_interval,
             ..

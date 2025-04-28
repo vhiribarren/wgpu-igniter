@@ -25,11 +25,10 @@ SOFTWARE.
 use std::rc::Rc;
 use wgpu_igniter::cameras::{Camera, InteractiveCamera};
 use wgpu_igniter::plugins::egui::EguiSupport;
+use wgpu_igniter::plugins::scene_3d::{Scene3D, SceneElements};
 use wgpu_igniter::primitives::cube::CubeOptions;
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
-use wgpu_igniter::{DrawContext, EventState, RenderContext};
-use winit::event::DeviceEvent;
+use wgpu_igniter::{LaunchContext, RenderContext, RenderLoopHandler};
 
 const DEFAULT_SHADER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -59,18 +58,22 @@ impl GuiState {
 
 pub struct MainScenario {
     cube: Rc<std::cell::RefCell<Object3D>>,
-    scene_elements: SceneElements,
-    egui_support: EguiSupport,
     gui_state: GuiState,
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &DrawContext) -> Self {
+    pub fn new(
+        LaunchContext {
+            draw_context,
+            plugin_registry,
+        }: LaunchContext,
+    ) -> Self {
         let egui_support = EguiSupport::new(draw_context);
         let gui_state = GuiState {
             pixels_per_point: egui_support.get_pixels_per_point(),
             anim_speed: 1.0,
         };
+
         let camera = InteractiveCamera::new(Camera::default());
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let mut scene = Scene3D::new(draw_context);
@@ -84,23 +87,21 @@ impl MainScenario {
         .into_shareable();
         scene.add(cube.clone());
 
-        let scene_elements = SceneElements { camera, scene };
-        Self {
-            cube,
-            scene_elements,
-            egui_support,
-            gui_state,
-        }
+        plugin_registry.register(SceneElements { camera, scene });
+        plugin_registry.register(egui_support);
+
+        Self { cube, gui_state }
     }
 }
 
-impl SceneLoopHandler for MainScenario {
-    fn scene_elements_mut(&mut self) -> &mut SceneElements {
-        &mut self.scene_elements
-    }
-
-    fn on_update(&mut self, context: &RenderContext) {
-        let total_seconds = context.time_info.init_start.elapsed().as_secs_f32();
+impl RenderLoopHandler for MainScenario {
+    fn on_render(
+        &mut self,
+        plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
+        render_context: &RenderContext,
+        _render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
+        let total_seconds = render_context.time_info.init_start.elapsed().as_secs_f32();
         let new_rotation = ROTATION_DEG_PER_S * total_seconds;
         // Translation on z to be in the clipped space (between -w and w) and camera in front of the cube
         let z_translation: cgmath::Matrix4<f32> =
@@ -110,29 +111,12 @@ impl SceneLoopHandler for MainScenario {
         self.cube
             .borrow_mut()
             .set_transform(transform * z_translation);
-    }
 
-    // NOTE Or maybe EguiSupport could add some callbacks to the window event, to avoid having to write those lines?
-    // Actually, could be the base of other mechanisms like for Scene3D, instead of manually iterating on the drawables?
-    fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventState {
-        self.egui_support.on_window_event(event)
-    }
-
-    fn on_mouse_event(&mut self, event: &DeviceEvent) {
-        if self.egui_support.egui_context().is_using_pointer() {
-            return;
-        }
-        self.scene_elements_mut().camera.mouse_event_listener(event);
-    }
-
-    fn on_post_render(
-        &mut self,
-        render_context: &RenderContext,
-        render_pass: &mut wgpu::RenderPass<'static>,
-    ) {
-        self.egui_support
-            .draw(render_context.draw_context, render_pass, |egui_context| {
-                self.gui_state.generate_egui(egui_context);
-            });
+        let egui_support = plugin_registry
+            .get_mut::<EguiSupport>()
+            .expect("EguiSupport should be registered");
+        egui_support.draw(|egui_context| {
+            self.gui_state.generate_egui(egui_context);
+        });
     }
 }
