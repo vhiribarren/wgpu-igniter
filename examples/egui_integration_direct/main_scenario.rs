@@ -25,8 +25,8 @@ SOFTWARE.
 use wgpu_igniter::plugins::egui::EguiSupport;
 use wgpu_igniter::plugins::{Plugin, PluginRegistry};
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, EventState, RenderContext,
-    RenderLoopHandler, Uniform,
+    DrawContext, DrawModeParams, Drawable, DrawableBuilder, EventState, LaunchContext,
+    RenderContext, RenderLoopHandler, Uniform,
 };
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");
@@ -44,7 +44,7 @@ pub struct MainScenario {
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &DrawContext) -> Self {
+    pub fn new(LaunchContext { draw_context, .. }: LaunchContext) -> Self {
         let egui_support = EguiSupport::new(draw_context);
         let gui_state = GuiState {
             pixels_per_point: egui_support.get_pixels_per_point(),

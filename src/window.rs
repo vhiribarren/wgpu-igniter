@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+use crate::LaunchContext;
 use crate::draw_context::{self, Dimensions, DrawContext};
 use crate::plugins::PluginRegistry;
 use crate::render_loop::{RenderContext, RenderLoopBuilder, RenderLoopHandler, TimeInfo};
@@ -111,12 +112,15 @@ impl App {
         let last_draw_instant = scenario_start;
         let last_fps_instant = scenario_start;
         let draw_period_target = Duration::from_secs_f64(1.0 / TARGET_DRAW_FPS);
-        let mut draw_context =
-            draw_context::DrawContext::new(Some(Arc::clone(&window)), dimensions)
-                .await
-                .unwrap();
-        let scenario = builder(&mut draw_context);
-        let plugin_registry = PluginRegistry::default();
+        let draw_context = draw_context::DrawContext::new(Some(Arc::clone(&window)), dimensions)
+            .await
+            .unwrap();
+
+        let mut plugin_registry = PluginRegistry::default();
+        let scenario = builder(LaunchContext {
+            draw_context: &draw_context,
+            plugin_registry: &mut plugin_registry,
+        });
         Self {
             window,
             mouse_state,
@@ -192,11 +196,7 @@ impl ApplicationHandler<App> for AppHandlerState {
         }
     }
 
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: App) {
-        let plugin_registry = &mut event.plugin_registry;
-        let scenario = &mut event.scenario;
-        let draw_context = &event.draw_context;
-        scenario.on_init(plugin_registry, draw_context);
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: App) {
         self.state = Some(event);
     }
 

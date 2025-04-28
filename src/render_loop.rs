@@ -56,7 +56,6 @@ pub struct EventState {
 }
 
 pub trait RenderLoopHandler {
-    fn on_init(&mut self, _plugin_registry: &mut PluginRegistry, _draw_context: &DrawContext) {}
     fn on_mouse_event(&mut self, _event: &DeviceEvent) {}
     fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
     fn on_window_event(&mut self, _event: &WindowEvent) -> EventState {
@@ -73,4 +72,9 @@ pub trait RenderLoopHandler {
     }
 }
 
-pub type RenderLoopBuilder = dyn Fn(&mut DrawContext) -> Box<dyn RenderLoopHandler> + Send;
+pub struct LaunchContext<'a> {
+    pub draw_context: &'a DrawContext,
+    pub plugin_registry: &'a mut PluginRegistry,
+}
+
+pub type RenderLoopBuilder = dyn Fn(LaunchContext<'_>) -> Box<dyn RenderLoopHandler> + Send;

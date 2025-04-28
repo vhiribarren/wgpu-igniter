@@ -31,9 +31,9 @@ use crate::draw_context::DrawModeParams;
 use crate::draw_context::DrawableBuilder;
 use crate::draw_context::IndexData;
 use crate::draw_context::Uniform;
+use crate::plugins::scene_3d::Scene3DUniforms;
 use crate::primitives::Object3D;
 use crate::primitives::color;
-use crate::scene_3d::Scene3DUniforms;
 
 use super::Object3DInstanceGroup;
 use super::Object3DInstanceGroupHandlers;

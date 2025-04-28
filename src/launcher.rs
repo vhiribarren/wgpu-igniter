@@ -26,6 +26,7 @@ use log::info;
 use std::env;
 
 use crate::{
+    LaunchContext,
     draw_context::DrawContext,
     render_loop::{RenderLoopBuilder, RenderLoopHandler},
     window::init_event_loop,
@@ -36,7 +37,7 @@ const ENV_HEADLESS: &str = "HEADLESS";
 
 pub fn launch_app<F>(builder: F)
 where
-    F: Fn(&mut DrawContext) -> Box<dyn RenderLoopHandler> + 'static + Send,
+    F: Fn(LaunchContext) -> Box<dyn RenderLoopHandler> + 'static + Send,
 {
     init_log();
     info!("Init app");
@@ -91,14 +92,18 @@ fn init_headless(builder: Box<RenderLoopBuilder>) {
 
     use crate::{TimeInfo, plugins::PluginRegistry, render_loop::RenderContext};
     let draw_context = &mut DrawContext::new(None, None).block_on().unwrap();
-    let mut scene_handler = builder(draw_context);
+    let plugin_registry = &mut PluginRegistry::default();
+
+    let mut scene_handler = builder(LaunchContext {
+        draw_context,
+        plugin_registry,
+    });
     // NOTE I do not like this circular dependency on context
     let render_context = RenderContext {
         time_info: &TimeInfo::default(),
         draw_context,
         _private: (),
     };
-    let plugin_registry = &mut PluginRegistry::default();
     draw_context
         .render_scene(|pass| {
             scene_handler.on_render(

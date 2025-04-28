@@ -22,11 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+use wgpu_igniter::plugins::PluginRegistry;
 use wgpu_igniter::plugins::egui::EguiSupport;
-use wgpu_igniter::plugins::{PluginRegistry, RegistryAccess};
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, RenderContext, RenderLoopHandler,
-    Uniform,
+    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext,
+    RenderLoopHandler, Uniform,
 };
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");
@@ -43,11 +43,17 @@ pub struct MainScenario {
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &DrawContext) -> Self {
+    pub fn new(
+        LaunchContext {
+            draw_context,
+            plugin_registry,
+        }: LaunchContext,
+    ) -> Self {
         let gui_state = GuiState {
             pixels_per_point: 1.0,
             anim_speed: 1.0,
         };
+        plugin_registry.register(EguiSupport::new(draw_context));
         let time_uniform = Uniform::new(draw_context, 0f32);
         let shader_module = draw_context.create_shader_module(CANVAS_STATIC_SHADER);
         let mut drawable_builder = DrawableBuilder::new(
@@ -80,9 +86,6 @@ impl MainScenario {
 }
 
 impl RenderLoopHandler for MainScenario {
-    fn on_init(&mut self, plugin_registry: &mut PluginRegistry, draw_context: &DrawContext) {
-        plugin_registry.register(EguiSupport::new(draw_context));
-    }
     fn on_render(
         &mut self,
         plugin_registry: &mut PluginRegistry,
@@ -91,7 +94,6 @@ impl RenderLoopHandler for MainScenario {
     ) {
         let RenderContext {
             time_info: update_interval,
-            draw_context,
             ..
         } = render_context;
         let egui_support = plugin_registry

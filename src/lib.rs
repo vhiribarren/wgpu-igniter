@@ -39,7 +39,6 @@ pub(crate) mod render_loop;
 pub mod cameras;
 pub mod plugins;
 pub mod primitives;
-pub mod scene_3d;
 
 pub use draw_context::*;
 pub use launcher::launch_app;

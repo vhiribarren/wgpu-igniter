@@ -24,9 +24,10 @@ SOFTWARE.
 
 use std::rc::Rc;
 use wgpu_igniter::cameras::{Camera, InteractiveCamera};
+use wgpu_igniter::plugins::PluginRegistry;
+use wgpu_igniter::plugins::scene_3d::{Scene3D, SceneElements};
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_igniter::scene_3d::{Scene3D, SceneElements, SceneLoopHandler};
-use wgpu_igniter::{DrawContext, RenderContext};
+use wgpu_igniter::{LaunchContext, RenderContext, RenderLoopHandler};
 
 const DEFAULT_SHADER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -37,13 +38,17 @@ const ROTATION_DEG_PER_S: f32 = 45.0;
 
 pub struct MainScenario {
     pub cube: Rc<std::cell::RefCell<Object3D>>,
-    pub scene_elements: SceneElements,
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &DrawContext) -> Self {
-        let camera = InteractiveCamera::new(Camera::default());
+    pub fn new(
+        LaunchContext {
+            draw_context,
+            plugin_registry,
+        }: LaunchContext,
+    ) -> Self {
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
+        let camera = InteractiveCamera::new(Camera::default());
         let mut scene = Scene3D::new(draw_context);
         let cube = cube::create_cube_with_colors(
             draw_context,
@@ -55,20 +60,19 @@ impl MainScenario {
         .into_shareable();
         scene.add(cube.clone());
         let scene_elements = SceneElements { camera, scene };
-        Self {
-            cube,
-            scene_elements,
-        }
+        plugin_registry.register(scene_elements);
+        Self { cube }
     }
 }
 
-impl SceneLoopHandler for MainScenario {
-    fn scene_elements_mut(&mut self) -> &mut SceneElements {
-        &mut self.scene_elements
-    }
-
-    fn on_update(&mut self, context: &RenderContext) {
-        let total_seconds = context.time_info.init_start.elapsed().as_secs_f32();
+impl RenderLoopHandler for MainScenario {
+    fn on_render(
+        &mut self,
+        _plugin_registry: &mut PluginRegistry,
+        render_context: &RenderContext,
+        _render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
+        let total_seconds = render_context.time_info.init_start.elapsed().as_secs_f32();
         let new_rotation = ROTATION_DEG_PER_S * total_seconds;
         // Translation on z to be in the clipped space (between -w and w) and camera in front of the cube
         let z_translation: cgmath::Matrix4<f32> =

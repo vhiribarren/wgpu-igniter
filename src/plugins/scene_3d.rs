@@ -23,15 +23,15 @@ SOFTWARE.
 */
 
 use crate::{
-    EventState, RenderLoopHandler,
     cameras::{Camera, InteractiveCamera},
     draw_context::{DrawContext, Drawable, Uniform},
-    plugins::PluginRegistry,
     render_loop::RenderContext,
 };
 use cgmath::{SquareMatrix, Zero};
 use std::{cell::RefCell, rc::Rc};
-use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
+use winit::event::{DeviceEvent, KeyEvent};
+
+use super::Plugin;
 
 pub type DrawableWrapper = Rc<RefCell<dyn AsRef<Drawable>>>;
 
@@ -93,70 +93,22 @@ pub struct SceneElements {
     pub scene: Scene3D,
 }
 
-pub trait SceneLoopHandler {
-    fn scene_elements_mut(&mut self) -> &mut SceneElements;
+impl Plugin for SceneElements {
     fn on_mouse_event(&mut self, event: &DeviceEvent) {
-        self.scene_elements_mut().camera.mouse_event_listener(event);
+        self.camera.mouse_event_listener(event);
     }
     fn on_keyboard_event(&mut self, event: &KeyEvent) {
-        self.scene_elements_mut()
-            .camera
-            .keyboard_event_listener(event);
+        self.camera.keyboard_event_listener(event);
     }
-    fn on_window_event(&mut self, _event: &WindowEvent) -> EventState {
-        EventState::default()
-    }
-    fn on_resize(&mut self, _draw_context: &DrawContext) {}
-    fn on_update(&mut self, update_context: &RenderContext);
-    fn on_post_render(
-        &mut self,
-        _render_context: &RenderContext,
-        _render_pass: &mut wgpu::RenderPass<'static>,
-    ) {
-    }
-}
-
-pub struct SceneLoopScheduler {
-    scene_loop_handler: Box<dyn SceneLoopHandler>,
-}
-
-impl SceneLoopScheduler {
-    pub fn run(scene_loop_handler: impl SceneLoopHandler + 'static) -> Box<dyn RenderLoopHandler> {
-        Box::new(Self {
-            scene_loop_handler: Box::new(scene_loop_handler),
-        })
-    }
-}
-
-impl RenderLoopHandler for SceneLoopScheduler {
-    fn on_mouse_event(&mut self, event: &DeviceEvent) {
-        self.scene_loop_handler.on_mouse_event(event);
-    }
-
-    fn on_keyboard_event(&mut self, event: &KeyEvent) {
-        self.scene_loop_handler
-            .scene_elements_mut()
-            .camera
-            .keyboard_event_listener(event);
-    }
-
-    fn on_window_event(&mut self, event: &WindowEvent) -> EventState {
-        self.scene_loop_handler.on_window_event(event)
-    }
-
     fn on_render(
         &mut self,
-        _plugin_registry: &mut PluginRegistry,
         render_context: &RenderContext,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
-        let scenario = &mut *self.scene_loop_handler;
-        scenario.on_update(render_context);
-        let SceneElements { camera, scene } = scenario.scene_elements_mut();
+        let Self { camera, scene } = self;
         camera.update_screen_size(render_context.draw_context.surface_dimensions());
         camera.update_control();
         scene.update(render_context, &camera.controled_camera);
         scene.render(render_pass);
-        scenario.on_post_render(render_context, render_pass);
     }
 }
