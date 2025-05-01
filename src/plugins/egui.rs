@@ -5,19 +5,19 @@ use winit::window::Window;
 
 use super::Plugin;
 
-pub enum EguiSupport {
+pub enum EquiPlugin {
     NoWindow(egui::Context),
-    WithWindow(EguiSupportWithWindow),
+    WithWindow(EguiPluginWithWindow),
 }
 
-pub struct EguiSupportWithWindow {
+pub struct EguiPluginWithWindow {
     egui_state: egui_winit::State,
     egui_renderer: egui_wgpu::Renderer,
     pixels_per_point: f32,
     window: Arc<Window>,
 }
 
-impl EguiSupport {
+impl EquiPlugin {
     pub fn new(draw_context: &DrawContext) -> Self {
         let Some(window) = draw_context.window.as_ref() else {
             return Self::NoWindow(egui::Context::default());
@@ -38,7 +38,7 @@ impl EguiSupport {
             draw_context.multisample_config.get_multisample_count(),
             true,
         );
-        Self::WithWindow(EguiSupportWithWindow {
+        Self::WithWindow(EguiPluginWithWindow {
             egui_state,
             egui_renderer,
             #[allow(clippy::cast_possible_truncation)]
@@ -81,7 +81,7 @@ impl EguiSupport {
         run_ui(egui_context);
     }
 
-    fn begin_frame(egui_support: &mut EguiSupportWithWindow) {
+    fn begin_frame(egui_support: &mut EguiPluginWithWindow) {
         let raw_input = egui_support
             .egui_state
             .take_egui_input(&egui_support.window);
@@ -89,7 +89,7 @@ impl EguiSupport {
     }
 
     fn end_frame_and_draw(
-        egui_support: &mut EguiSupportWithWindow,
+        egui_support: &mut EguiPluginWithWindow,
         device: &wgpu::Device,
         queue: &wgpu::Queue,
         screen_descriptor: &egui_wgpu::ScreenDescriptor,
@@ -129,7 +129,7 @@ impl EguiSupport {
     }
 }
 
-impl Plugin for EguiSupport {
+impl Plugin for EquiPlugin {
     fn on_window_event(&mut self, event: &winit::event::WindowEvent) -> EventState {
         match self {
             Self::WithWindow(egui_support) => {

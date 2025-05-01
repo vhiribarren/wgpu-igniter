@@ -23,7 +23,7 @@ SOFTWARE.
 */
 
 use wgpu_igniter::plugins::PluginRegistry;
-use wgpu_igniter::plugins::egui::EguiSupport;
+use wgpu_igniter::plugins::egui::EquiPlugin;
 use wgpu_igniter::{
     DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext, RenderLoopHandler,
     Uniform,
@@ -53,7 +53,7 @@ impl MainScenario {
             pixels_per_point: 1.0,
             anim_speed: 1.0,
         };
-        plugin_registry.register(EguiSupport::new(draw_context));
+        plugin_registry.register(EquiPlugin::new(draw_context));
         let time_uniform = Uniform::new(draw_context, 0f32);
         let shader_module = draw_context.create_shader_module(CANVAS_STATIC_SHADER);
         let mut drawable_builder = DrawableBuilder::new(
@@ -97,7 +97,7 @@ impl RenderLoopHandler for MainScenario {
             ..
         } = render_context;
         let egui_support = plugin_registry
-            .get_mut::<EguiSupport>()
+            .get_mut::<EquiPlugin>()
             .expect("EguiSupport should be registered");
         egui_support.draw(|egui_context| Self::generate_egui(&mut self.gui_state, egui_context));
         egui_support.set_pixels_per_point(self.gui_state.pixels_per_point);

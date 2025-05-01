@@ -89,12 +89,12 @@ impl Scene3D {
     }
 }
 
-pub struct SceneElements {
+pub struct Scene3DPlugin {
     pub camera: InteractiveCamera,
     pub scene: Scene3D,
 }
 
-impl Plugin for SceneElements {
+impl Plugin for Scene3DPlugin {
     fn on_mouse_event(&mut self, event: &DeviceEvent) -> EventState {
         self.camera.mouse_event_listener(event);
         EventState { processed: true }

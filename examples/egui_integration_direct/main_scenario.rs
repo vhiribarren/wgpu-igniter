@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-use wgpu_igniter::plugins::egui::EguiSupport;
+use wgpu_igniter::plugins::egui::EquiPlugin;
 use wgpu_igniter::plugins::{Plugin, PluginRegistry};
 use wgpu_igniter::{
     DrawModeParams, Drawable, DrawableBuilder, EventState, LaunchContext, RenderContext,
@@ -39,13 +39,13 @@ struct GuiState {
 pub struct MainScenario {
     canvas: Drawable,
     time_uniform: Uniform<f32>,
-    egui_support: EguiSupport,
+    egui_support: EquiPlugin,
     gui_state: GuiState,
 }
 
 impl MainScenario {
     pub fn new(LaunchContext { draw_context, .. }: LaunchContext) -> Self {
-        let egui_support = EguiSupport::new(draw_context);
+        let egui_support = EquiPlugin::new(draw_context);
         let gui_state = GuiState {
             pixels_per_point: egui_support.get_pixels_per_point(),
             anim_speed: 1.0,

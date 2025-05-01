@@ -24,8 +24,8 @@ SOFTWARE.
 
 use std::rc::Rc;
 use wgpu_igniter::cameras::{Camera, InteractiveCamera};
-use wgpu_igniter::plugins::egui::EguiSupport;
-use wgpu_igniter::plugins::scene_3d::{Scene3D, SceneElements};
+use wgpu_igniter::plugins::egui::EquiPlugin;
+use wgpu_igniter::plugins::scene_3d::{Scene3D, Scene3DPlugin};
 use wgpu_igniter::primitives::cube::CubeOptions;
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_igniter::{LaunchContext, RenderContext, RenderLoopHandler};
@@ -68,7 +68,7 @@ impl MainScenario {
             plugin_registry,
         }: LaunchContext,
     ) -> Self {
-        let egui_support = EguiSupport::new(draw_context);
+        let egui_support = EquiPlugin::new(draw_context);
         let gui_state = GuiState {
             pixels_per_point: egui_support.get_pixels_per_point(),
             anim_speed: 1.0,
@@ -87,7 +87,7 @@ impl MainScenario {
         .into_shareable();
         scene.add(cube.clone());
 
-        plugin_registry.register(SceneElements { camera, scene });
+        plugin_registry.register(Scene3DPlugin { camera, scene });
         plugin_registry.register(egui_support);
 
         Self { cube, gui_state }
@@ -113,7 +113,7 @@ impl RenderLoopHandler for MainScenario {
             .set_transform(transform * z_translation);
 
         let egui_support = plugin_registry
-            .get_mut::<EguiSupport>()
+            .get_mut::<EquiPlugin>()
             .expect("EguiSupport should be registered");
         egui_support.draw(|egui_context| {
             self.gui_state.generate_egui(egui_context);

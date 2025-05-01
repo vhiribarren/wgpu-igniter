@@ -26,7 +26,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use web_time::Duration;
 use wgpu_igniter::cameras::{Camera, InteractiveCamera};
-use wgpu_igniter::plugins::scene_3d::{Scene3D, SceneElements};
+use wgpu_igniter::plugins::scene_3d::{Scene3D, Scene3DPlugin};
 use wgpu_igniter::primitives::cube::CubeOptions;
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_igniter::{LaunchContext, RenderContext, RenderLoopHandler};
@@ -83,7 +83,7 @@ impl MainScenario {
         scene.add(cube_interpolated.clone());
         scene.add(cube_flat.clone());
 
-        plugin_registry.register(SceneElements { camera, scene });
+        plugin_registry.register(Scene3DPlugin { camera, scene });
 
         Self {
             cube_interpolated,

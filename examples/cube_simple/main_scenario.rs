@@ -25,7 +25,7 @@ SOFTWARE.
 use std::rc::Rc;
 use wgpu_igniter::cameras::{Camera, InteractiveCamera};
 use wgpu_igniter::plugins::PluginRegistry;
-use wgpu_igniter::plugins::scene_3d::{Scene3D, SceneElements};
+use wgpu_igniter::plugins::scene_3d::{Scene3D, Scene3DPlugin};
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
 use wgpu_igniter::{LaunchContext, RenderContext, RenderLoopHandler};
 
@@ -59,7 +59,7 @@ impl MainScenario {
         )
         .into_shareable();
         scene.add(cube.clone());
-        let scene_elements = SceneElements { camera, scene };
+        let scene_elements = Scene3DPlugin { camera, scene };
         plugin_registry.register(scene_elements);
         Self { cube }
     }
