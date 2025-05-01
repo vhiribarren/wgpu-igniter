@@ -55,11 +55,20 @@ pub struct EventState {
     pub processed: bool,
 }
 
+#[allow(unused_variables)]
 pub trait RenderLoopHandler {
-    fn on_mouse_event(&mut self, _event: &DeviceEvent) {}
-    fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
-    fn on_window_event(&mut self, _event: &WindowEvent) -> EventState {
+    fn on_mouse_event(&mut self, event: &DeviceEvent) {}
+    fn on_keyboard_event(&mut self, event: &KeyEvent) {}
+    fn on_window_event(&mut self, event: &WindowEvent) -> EventState {
         EventState::default()
+    }
+    fn on_init(&mut self, plugin_registry: &mut PluginRegistry, draw_context: &mut DrawContext) {}
+    fn on_update(
+        &mut self,
+        plugin_registry: &mut PluginRegistry,
+        draw_context: &mut DrawContext,
+        time_info: &TimeInfo,
+    ) {
     }
     fn on_render(
         &mut self,
@@ -70,6 +79,16 @@ pub trait RenderLoopHandler {
     fn is_finished(&self) -> bool {
         false
     }
+
+    /*
+    fn on_render(
+        &mut self,
+        plugin_registry: &mut PluginRegistry,
+        draw_context: &DrawContext,
+        time_info: &TimeInfo,
+        render_pass: &mut wgpu::RenderPass<'static>,
+    );
+     */
 }
 
 pub struct LaunchContext<'a> {

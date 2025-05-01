@@ -23,12 +23,13 @@ SOFTWARE.
 */
 
 use cgmath::SquareMatrix;
+use wgpu_igniter::plugins::PluginRegistry;
 use wgpu_igniter::primitives::triangle::{
     TRIANGLE_COLOR, TRIANGLE_GEOMETRY, TRIANGLE_VERTEX_COUNT,
 };
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, RenderContext, RenderLoopHandler,
-    Uniform,
+    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext,
+    RenderLoopHandler, Uniform,
 };
 
 const DEFAULT_SHADER: &str = include_str!("./triangle_direct.wgsl");
@@ -41,7 +42,7 @@ pub struct MainScenario {
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &DrawContext) -> Self {
+    pub fn new(LaunchContext { draw_context, .. }: LaunchContext) -> Self {
         let shader_module = draw_context.create_shader_module(DEFAULT_SHADER);
         let transform_uniform = Uniform::new(draw_context, cgmath::Matrix4::identity().into());
         let mut drawable_builder = DrawableBuilder::new(
@@ -78,17 +79,21 @@ impl MainScenario {
 }
 
 impl RenderLoopHandler for MainScenario {
-    fn on_render(&mut self, render_context: &RenderContext, mut render_pass: wgpu::RenderPass<'_>) {
+    fn on_init(&mut self, _plugin_registry: &mut PluginRegistry, draw_context: &mut DrawContext) {
+        draw_context.set_clear_color(Some(wgpu::Color::BLUE));
+    }
+    fn on_render(
+        &mut self,
+        _plugin_registry: &mut PluginRegistry,
+        render_context: &RenderContext,
+        render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
         let total_seconds = render_context.time_info.init_start.elapsed().as_secs_f32();
         let new_rotation = ROTATION_DEG_PER_S * total_seconds;
         let transform: cgmath::Matrix4<f32> = cgmath::Matrix4::from_scale(0.5)
             * cgmath::Matrix4::from_angle_z(cgmath::Deg(new_rotation));
         self.transform_uniform.write_uniform(transform.into());
 
-        self.triangle.render(&mut render_pass);
+        self.triangle.render(render_pass);
     }
-
-    fn on_mouse_event(&mut self, _event: &winit::event::DeviceEvent) {}
-
-    fn on_keyboard_event(&mut self, _event: &winit::event::KeyEvent) {}
 }

@@ -26,7 +26,9 @@ use std::vec::IntoIter;
 
 use log::debug;
 use web_time::{Duration, Instant};
-use wgpu_igniter::{DrawContext, RenderContext, RenderLoopHandler, scene_3d::SceneLoopScheduler};
+use wgpu_igniter::{
+    DrawContext, LaunchContext, RenderContext, RenderLoopHandler, TimeInfo, plugins::PluginRegistry,
+};
 
 use crate::{scenario_cube, scenario_triangle};
 
@@ -42,7 +44,7 @@ enum ScenarioDescription {
 }
 
 impl ScenarioDescription {
-    pub fn get_scenario_mut(&mut self) -> &mut Box<dyn RenderLoopHandler> {
+    fn get_scenario_mut(&mut self) -> &mut Box<dyn RenderLoopHandler> {
         match self {
             ScenarioDescription::WithDuration { scenario, .. } => scenario,
             ScenarioDescription::WithTermination { scenario } => scenario,
@@ -51,26 +53,52 @@ impl ScenarioDescription {
 }
 
 pub struct MainScenario {
-    scenarios_iter: IntoIter<ScenarioDescription>,
+    scenarios_iter: IntoIter<(ScenarioDescription, PluginRegistry)>,
     current_scenario: ScenarioDescription,
     last_instant: Instant,
     end_flag: bool,
 }
 
 impl MainScenario {
-    pub fn new(draw_context: &DrawContext) -> Self {
+    pub fn new(
+        LaunchContext {
+            draw_context,
+            plugin_registry,
+        }: LaunchContext,
+    ) -> Self {
         let scenarios = vec![
-            ScenarioDescription::WithDuration {
-                scenario: Box::new(scenario_triangle::MainScenario::new(draw_context)),
-                duration: Duration::from_secs(5),
+            {
+                let mut local_registry = PluginRegistry::default();
+                let scenario_desc = ScenarioDescription::WithDuration {
+                    scenario: Box::new(scenario_triangle::MainScenario::new(LaunchContext {
+                        draw_context,
+                        plugin_registry: &mut local_registry,
+                    })),
+                    duration: Duration::from_secs(5),
+                };
+                (scenario_desc, local_registry)
             },
-            ScenarioDescription::WithDuration {
-                scenario: SceneLoopScheduler::run(scenario_cube::MainScenario::new(draw_context)),
-                duration: Duration::from_secs(5),
+            {
+                let mut local_registry = PluginRegistry::default();
+                let scenario_desc = ScenarioDescription::WithDuration {
+                    scenario: Box::new(scenario_cube::MainScenario::new(LaunchContext {
+                        draw_context,
+                        plugin_registry: &mut local_registry,
+                    })),
+                    duration: Duration::from_secs(5),
+                };
+                (scenario_desc, local_registry)
             },
         ];
         let mut scenarios_iter = scenarios.into_iter();
-        let current_scenario = scenarios_iter.next().unwrap();
+
+        let (mut current_scenario, current_registry) = scenarios_iter.next().unwrap();
+        *plugin_registry = current_registry;
+        current_scenario
+            .get_scenario_mut()
+            .on_init(plugin_registry, draw_context);
+
+        debug!("Switching to next scenario");
         let last_instant = Instant::now();
         Self {
             scenarios_iter,
@@ -79,7 +107,11 @@ impl MainScenario {
             end_flag: false,
         }
     }
-    fn progress_scenario(&mut self) {
+    fn progress_scenario(
+        &mut self,
+        plugin_registry: &mut PluginRegistry,
+        draw_context: &mut DrawContext,
+    ) {
         match &self.current_scenario {
             ScenarioDescription::WithDuration { duration, .. } => {
                 let now = Instant::now();
@@ -97,8 +129,12 @@ impl MainScenario {
                 }
             }
         }
-        if let Some(next_scenario) = self.scenarios_iter.next() {
+        if let Some((next_scenario, next_registry)) = self.scenarios_iter.next() {
             self.current_scenario = next_scenario;
+            *plugin_registry = next_registry;
+            self.current_scenario
+                .get_scenario_mut()
+                .on_init(plugin_registry, draw_context);
             debug!("Switching to next scenario");
         } else {
             debug!("No more scenarios to run, stopping");
@@ -108,17 +144,30 @@ impl MainScenario {
 }
 
 impl RenderLoopHandler for MainScenario {
-    fn on_render(&mut self, render_context: &RenderContext, render_pass: wgpu::RenderPass<'_>) {
-        self.progress_scenario();
+    fn is_finished(&self) -> bool {
+        self.end_flag
+    }
+
+    fn on_update(
+        &mut self,
+        plugin_registry: &mut PluginRegistry,
+        draw_context: &mut DrawContext,
+        _time_info: &TimeInfo,
+    ) {
+        self.progress_scenario(plugin_registry, draw_context);
+    }
+
+    fn on_render(
+        &mut self,
+        plugin_registry: &mut PluginRegistry,
+        render_context: &RenderContext,
+        render_pass: &mut wgpu::RenderPass<'static>,
+    ) {
         if self.is_finished() {
             return;
         }
-        self.current_scenario
-            .get_scenario_mut()
-            .on_render(render_context, render_pass);
-    }
 
-    fn is_finished(&self) -> bool {
-        self.end_flag
+        let scenario = self.current_scenario.get_scenario_mut();
+        scenario.on_render(plugin_registry, render_context, render_pass);
     }
 }

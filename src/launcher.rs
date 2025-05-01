@@ -70,7 +70,7 @@ fn init_log() {
     }
     builder
         .level(GLOBAL_LOG_FILTER)
-        .level_for(module_path!(), log::LevelFilter::Debug)
+        .level_for(env!("CARGO_PKG_NAME"), log::LevelFilter::Debug)
         .format(move |out, message, record| {
             out.finish(format_args!(
                 "{}[{}][{}:{}] {}",

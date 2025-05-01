@@ -118,10 +118,11 @@ impl App {
                 .unwrap();
 
         let mut plugin_registry = PluginRegistry::default();
-        let scenario = builder(LaunchContext {
+        let mut scenario = builder(LaunchContext {
             draw_context: &mut draw_context,
             plugin_registry: &mut plugin_registry,
         });
+        scenario.on_init(&mut plugin_registry, &mut draw_context);
         Self {
             window,
             mouse_state,
@@ -263,6 +264,15 @@ impl ApplicationHandler<App> for AppHandlerState {
                     info!("FPS: {}", (1.0 / draw_delta.as_secs_f64()).round());
                     app.last_fps_instant = app.last_draw_instant;
                 }
+
+                let plugin_registry = &mut app.plugin_registry;
+                let time_info = &TimeInfo {
+                    init_start: app.scenario_start,
+                    processing_delta: draw_delta,
+                    _private: (),
+                };
+                app.scenario
+                    .on_update(plugin_registry, &mut app.draw_context, time_info);
                 let render_context = &RenderContext {
                     draw_context: &app.draw_context,
                     time_info: &TimeInfo {
@@ -272,7 +282,6 @@ impl ApplicationHandler<App> for AppHandlerState {
                     },
                     _private: (),
                 };
-                let plugin_registry = &mut app.plugin_registry;
                 app.draw_context
                     .render_scene(|render_pass| {
                         let rpass = &mut render_pass.forget_lifetime();
