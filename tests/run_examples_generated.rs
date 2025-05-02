@@ -50,6 +50,8 @@ macro_rules! generate_test_case {
 }
 
 #[rustfmt::skip]
+generate_test_case!(example_canvas_plugin_doesnt_panic, "canvas_plugin");
+#[rustfmt::skip]
 generate_test_case!(example_canvas_raw_doesnt_panic, "canvas_raw");
 #[rustfmt::skip]
 generate_test_case!(example_cube_instances_doesnt_panic, "cube_instances");

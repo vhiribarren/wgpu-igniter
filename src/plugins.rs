@@ -29,6 +29,7 @@ use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
 
 use crate::{DrawContext, EventState, TimeInfo};
 
+pub mod canvas;
 #[cfg(feature = "egui")]
 pub mod egui;
 pub mod scene_3d;
