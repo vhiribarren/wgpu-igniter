@@ -141,9 +141,6 @@ impl<T: UnitformType> Uniform<T> {
             queue,
         }
     }
-    pub fn binding_resource(&self) -> wgpu::BindingResource {
-        self.buffer.as_entire_binding()
-    }
     pub fn read_uniform(&self) -> &T {
         &self.value
     }
@@ -154,6 +151,25 @@ impl<T: UnitformType> Uniform<T> {
             0 as wgpu::BufferAddress,
             bytemuck::cast_slice(&[self.value.apply_alignment()]),
         );
+    }
+}
+
+pub struct UniformSlot<'a> {
+    pub bind_group: u32,
+    pub binding: u32,
+    pub uniform: &'a dyn AsBindingResource,
+}
+
+pub trait AsBindingResource {
+    fn binding_resource(&self) -> wgpu::BindingResource;
+}
+
+impl<T> AsBindingResource for Uniform<T>
+where
+    T: UnitformType,
+{
+    fn binding_resource(&self) -> wgpu::BindingResource {
+        self.buffer.as_entire_binding()
     }
 }
 
@@ -332,15 +348,12 @@ impl<'a> DrawableBuilder<'a> {
         self.blend_option = Some(blend_option);
         self
     }
-    pub fn add_uniform<T>(
+    pub fn add_uniform(
         &mut self,
         bind_group: u32,
         binding: u32,
-        uniform: &'a Uniform<T>,
-    ) -> Result<&mut Self, anyhow::Error>
-    where
-        T: UnitformType,
-    {
+        uniform: &'a dyn AsBindingResource,
+    ) -> Result<&mut Self, anyhow::Error> {
         let bind_group_layout_entry = wgpu::BindGroupLayoutEntry {
             binding,
             visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,

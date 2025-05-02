@@ -38,7 +38,9 @@ impl MainScenario {
         let canvas = CanvasPlugin::new(
             &draw_context,
             &draw_context.create_shader_module(FRAGMENT_SHADER),
-        );
+            &[],
+        )
+        .expect("Issue with canvas plugin creation");
         plugin_registry.register(canvas);
         MainScenario {}
     }

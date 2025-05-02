@@ -25,17 +25,18 @@ SOFTWARE.
 use wgpu_igniter::plugins::PluginRegistry;
 use wgpu_igniter::plugins::canvas::CanvasPlugin;
 use wgpu_igniter::plugins::egui::EquiPlugin;
-use wgpu_igniter::{DrawContext, LaunchContext, RenderLoopHandler, TimeInfo};
+use wgpu_igniter::{DrawContext, LaunchContext, RenderLoopHandler, TimeInfo, Uniform, UniformSlot};
 
 const FRAGMENT_SHADER: &str = include_str!("./fragment_shader.wgsl");
 
 struct GuiState {
-    pub anim_speed: f32,
+    anim_speed: f32,
     pixels_per_point: f32,
 }
 
 pub struct MainScenario {
     gui_state: GuiState,
+    speed_uniform: Uniform<f32>,
 }
 
 impl MainScenario {
@@ -45,19 +46,31 @@ impl MainScenario {
             plugin_registry,
         }: LaunchContext,
     ) -> Self {
+        let egui_plugin = EquiPlugin::new(draw_context);
+        let speed_uniform = Uniform::new(&draw_context, 1.0);
         let gui_state = GuiState {
-            pixels_per_point: 1.0,
+            pixels_per_point: egui_plugin.get_pixels_per_point(),
             anim_speed: 1.0,
         };
         let canvas = CanvasPlugin::new(
             &draw_context,
             &draw_context.create_shader_module(FRAGMENT_SHADER),
-        );
+            &[UniformSlot {
+                bind_group: 1,
+                binding: 0,
+                uniform: &speed_uniform,
+            }],
+        )
+        .expect("Bind group or binding alreay taken");
         plugin_registry.register(canvas);
-        plugin_registry.register(EquiPlugin::new(draw_context));
+        plugin_registry.register(egui_plugin);
 
-        Self { gui_state }
+        Self {
+            gui_state,
+            speed_uniform,
+        }
     }
+
     fn generate_egui(state: &mut GuiState, egui_context: &egui::Context) {
         egui::TopBottomPanel::top("top_bar").show(egui_context, |ui| {
             ui.label("Egui Integration Example");
@@ -78,11 +91,11 @@ impl RenderLoopHandler for MainScenario {
         _draw_context: &mut DrawContext,
         _time_info: &TimeInfo,
     ) {
-        //FIXME Take into account speed info, by adding a uniform to the canvas
         let egui_support = plugin_registry
             .get_mut::<EquiPlugin>()
             .expect("EguiSupport should be registered");
         egui_support.set_pixels_per_point(self.gui_state.pixels_per_point);
         egui_support.draw(|egui_context| Self::generate_egui(&mut self.gui_state, egui_context));
+        self.speed_uniform.write_uniform(self.gui_state.anim_speed);
     }
 }
