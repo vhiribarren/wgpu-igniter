@@ -23,10 +23,9 @@ SOFTWARE.
 */
 
 use crate::{
-    EventState,
+    EventState, TimeInfo,
     cameras::{Camera, InteractiveCamera},
     draw_context::{DrawContext, Drawable, Uniform},
-    render_loop::RenderContext,
 };
 use cgmath::{SquareMatrix, Zero};
 use std::{cell::RefCell, rc::Rc};
@@ -64,7 +63,7 @@ impl Scene3D {
         &self.scene_uniforms
     }
 
-    pub fn update(&mut self, _context: &RenderContext, camera: &Camera) {
+    fn update(&mut self, camera: &Camera) {
         self.scene_uniforms
             .camera_mat
             .write_uniform(camera.get_camera_matrix().into());
@@ -104,13 +103,14 @@ impl Plugin for Scene3DPlugin {
     }
     fn on_render(
         &mut self,
-        render_context: &RenderContext,
+        draw_context: &DrawContext,
+        _: &TimeInfo,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
         let Self { camera, scene } = self;
-        camera.update_screen_size(render_context.draw_context.surface_dimensions());
+        camera.update_screen_size(draw_context.surface_dimensions());
         camera.update_control();
-        scene.update(render_context, &camera.controled_camera);
+        scene.update(&camera.controled_camera);
         scene.render(render_pass);
     }
 }

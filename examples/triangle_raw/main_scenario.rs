@@ -22,11 +22,13 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+use wgpu_igniter::plugins::PluginRegistry;
 use wgpu_igniter::primitives::triangle::{
     TRIANGLE_COLOR, TRIANGLE_GEOMETRY, TRIANGLE_VERTEX_COUNT,
 };
 use wgpu_igniter::{
-    DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext, RenderLoopHandler,
+    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderLoopHandler,
+    TimeInfo,
 };
 
 const DEFAULT_SHADER: &str = include_str!("./triangle_raw.wgsl");
@@ -69,8 +71,9 @@ impl MainScenario {
 impl RenderLoopHandler for MainScenario {
     fn on_render(
         &mut self,
-        _plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
-        _render_context: &RenderContext,
+        _plugin_registry: &mut PluginRegistry,
+        _draw_context: &DrawContext,
+        _time_info: &TimeInfo,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
         self.triangle.render(render_pass);

@@ -43,13 +43,6 @@ impl Default for TimeInfo {
     }
 }
 
-#[allow(clippy::manual_non_exhaustive)]
-pub struct RenderContext<'a> {
-    pub time_info: &'a TimeInfo,
-    pub draw_context: &'a DrawContext,
-    pub(crate) _private: (),
-}
-
 #[derive(Default)]
 pub struct EventState {
     pub processed: bool,
@@ -73,22 +66,14 @@ pub trait RenderLoopHandler {
     fn on_render(
         &mut self,
         plugin_registry: &mut PluginRegistry,
-        render_context: &RenderContext,
-        render_pass: &mut wgpu::RenderPass<'static>,
-    );
-    fn is_finished(&self) -> bool {
-        false
-    }
-
-    /*
-    fn on_render(
-        &mut self,
-        plugin_registry: &mut PluginRegistry,
         draw_context: &DrawContext,
         time_info: &TimeInfo,
         render_pass: &mut wgpu::RenderPass<'static>,
-    );
-     */
+    ) {
+    }
+    fn is_finished(&self) -> bool {
+        false
+    }
 }
 
 pub struct LaunchContext<'a> {

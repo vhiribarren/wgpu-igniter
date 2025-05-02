@@ -23,12 +23,13 @@ SOFTWARE.
 */
 
 use cgmath::SquareMatrix;
+use wgpu_igniter::plugins::PluginRegistry;
 use wgpu_igniter::primitives::triangle::{
     TRIANGLE_COLOR, TRIANGLE_GEOMETRY, TRIANGLE_VERTEX_COUNT,
 };
 use wgpu_igniter::{
-    DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext, RenderLoopHandler,
-    Uniform,
+    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderLoopHandler,
+    TimeInfo, Uniform,
 };
 
 const DEFAULT_SHADER: &str = include_str!("./triangle_rotation.wgsl");
@@ -80,17 +81,18 @@ impl MainScenario {
 impl RenderLoopHandler for MainScenario {
     fn on_render(
         &mut self,
-        _plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
-        render_context: &RenderContext,
+        _plugin_registry: &mut PluginRegistry,
+        draw_context: &DrawContext,
+        time_info: &TimeInfo,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
-        let screen_ratio = render_context.draw_context.surface_ratio();
+        let screen_ratio = draw_context.surface_ratio();
         let scale_factor = if screen_ratio > 1.0 {
             cgmath::Matrix4::from_nonuniform_scale(1.0 / screen_ratio, 1.0, 1.0)
         } else {
             cgmath::Matrix4::from_nonuniform_scale(1.0, screen_ratio, 1.0)
         };
-        let total_seconds = render_context.time_info.init_start.elapsed().as_secs_f32();
+        let total_seconds = time_info.init_start.elapsed().as_secs_f32();
         let new_rotation = ROTATION_DEG_PER_S * total_seconds;
         let transform: cgmath::Matrix4<f32> = scale_factor
             * cgmath::Matrix4::from_scale(0.9)

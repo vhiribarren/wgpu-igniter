@@ -28,8 +28,8 @@ use wgpu_igniter::primitives::triangle::{
     TRIANGLE_COLOR, TRIANGLE_GEOMETRY, TRIANGLE_VERTEX_COUNT,
 };
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext,
-    RenderLoopHandler, Uniform,
+    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderLoopHandler,
+    TimeInfo, Uniform,
 };
 
 const DEFAULT_SHADER: &str = include_str!("./triangle_direct.wgsl");
@@ -85,10 +85,11 @@ impl RenderLoopHandler for MainScenario {
     fn on_render(
         &mut self,
         _plugin_registry: &mut PluginRegistry,
-        render_context: &RenderContext,
+        _draw_context: &DrawContext,
+        time_info: &TimeInfo,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
-        let total_seconds = render_context.time_info.init_start.elapsed().as_secs_f32();
+        let total_seconds = time_info.init_start.elapsed().as_secs_f32();
         let new_rotation = ROTATION_DEG_PER_S * total_seconds;
         let transform: cgmath::Matrix4<f32> = cgmath::Matrix4::from_scale(0.5)
             * cgmath::Matrix4::from_angle_z(cgmath::Deg(new_rotation));

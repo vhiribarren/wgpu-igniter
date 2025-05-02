@@ -25,8 +25,8 @@ SOFTWARE.
 use wgpu_igniter::plugins::PluginRegistry;
 use wgpu_igniter::plugins::egui::EquiPlugin;
 use wgpu_igniter::{
-    DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext, RenderLoopHandler,
-    Uniform,
+    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderLoopHandler,
+    TimeInfo, Uniform,
 };
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");
@@ -89,20 +89,17 @@ impl RenderLoopHandler for MainScenario {
     fn on_render(
         &mut self,
         plugin_registry: &mut PluginRegistry,
-        render_context: &RenderContext,
+        _draw_context: &DrawContext,
+        time_info: &TimeInfo,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
-        let RenderContext {
-            time_info: update_interval,
-            ..
-        } = render_context;
         let egui_support = plugin_registry
             .get_mut::<EquiPlugin>()
             .expect("EguiSupport should be registered");
         egui_support.draw(|egui_context| Self::generate_egui(&mut self.gui_state, egui_context));
         egui_support.set_pixels_per_point(self.gui_state.pixels_per_point);
         self.time_uniform.write_uniform(
-            update_interval.init_start.elapsed().as_secs_f32() * self.gui_state.anim_speed,
+            time_info.init_start.elapsed().as_secs_f32() * self.gui_state.anim_speed,
         );
         self.canvas.render(render_pass);
     }

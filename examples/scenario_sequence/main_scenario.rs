@@ -27,7 +27,7 @@ use std::vec::IntoIter;
 use log::debug;
 use web_time::{Duration, Instant};
 use wgpu_igniter::{
-    DrawContext, LaunchContext, RenderContext, RenderLoopHandler, TimeInfo, plugins::PluginRegistry,
+    DrawContext, LaunchContext, RenderLoopHandler, TimeInfo, plugins::PluginRegistry,
 };
 
 use crate::{scenario_cube, scenario_triangle};
@@ -152,22 +152,27 @@ impl RenderLoopHandler for MainScenario {
         &mut self,
         plugin_registry: &mut PluginRegistry,
         draw_context: &mut DrawContext,
-        _time_info: &TimeInfo,
+        time_info: &TimeInfo,
     ) {
         self.progress_scenario(plugin_registry, draw_context);
+        if self.is_finished() {
+            return;
+        }
+        self.current_scenario.get_scenario_mut().on_update(
+            plugin_registry,
+            draw_context,
+            time_info,
+        );
     }
 
     fn on_render(
         &mut self,
         plugin_registry: &mut PluginRegistry,
-        render_context: &RenderContext,
+        draw_context: &DrawContext,
+        time_info: &TimeInfo,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
-        if self.is_finished() {
-            return;
-        }
-
         let scenario = self.current_scenario.get_scenario_mut();
-        scenario.on_render(plugin_registry, render_context, render_pass);
+        scenario.on_render(plugin_registry, draw_context, time_info, render_pass);
     }
 }

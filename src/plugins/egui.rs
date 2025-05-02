@@ -151,13 +151,13 @@ impl Plugin for EquiPlugin {
     }
     fn on_render(
         &mut self,
-        render_context: &crate::RenderContext,
+        draw_context: &DrawContext,
+        _: &crate::TimeInfo,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
         let Self::WithWindow(egui_support) = self else {
             return;
         };
-        let draw_context = render_context.draw_context;
         let screen_descriptor = egui_wgpu::ScreenDescriptor {
             size_in_pixels: [
                 draw_context.surface_config.width,

@@ -25,7 +25,7 @@ SOFTWARE.
 use crate::LaunchContext;
 use crate::draw_context::{self, Dimensions, DrawContext};
 use crate::plugins::PluginRegistry;
-use crate::render_loop::{RenderContext, RenderLoopBuilder, RenderLoopHandler, TimeInfo};
+use crate::render_loop::{RenderLoopBuilder, RenderLoopHandler, TimeInfo};
 use log::{debug, info};
 use std::sync::Arc;
 use web_time::{Duration, Instant};
@@ -273,22 +273,17 @@ impl ApplicationHandler<App> for AppHandlerState {
                 };
                 app.scenario
                     .on_update(plugin_registry, &mut app.draw_context, time_info);
-                let render_context = &RenderContext {
-                    draw_context: &app.draw_context,
-                    time_info: &TimeInfo {
-                        init_start: app.scenario_start,
-                        processing_delta: draw_delta,
-                        _private: (),
-                    },
-                    _private: (),
-                };
                 app.draw_context
                     .render_scene(|render_pass| {
                         let rpass = &mut render_pass.forget_lifetime();
-                        app.scenario
-                            .on_render(plugin_registry, render_context, rpass);
+                        app.scenario.on_render(
+                            plugin_registry,
+                            &app.draw_context,
+                            time_info,
+                            rpass,
+                        );
                         for listener in plugin_registry.iter_mut() {
-                            listener.on_render(render_context, rpass);
+                            listener.on_render(&app.draw_context, time_info, rpass);
                         }
                     })
                     .unwrap();

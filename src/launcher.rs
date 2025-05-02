@@ -90,7 +90,7 @@ fn init_log() {
 fn init_headless(builder: Box<RenderLoopBuilder>) {
     use pollster::FutureExt;
 
-    use crate::{TimeInfo, plugins::PluginRegistry, render_loop::RenderContext};
+    use crate::{TimeInfo, plugins::PluginRegistry};
     let draw_context = &mut DrawContext::new(None, None).block_on().unwrap();
     let plugin_registry = &mut PluginRegistry::default();
 
@@ -99,16 +99,12 @@ fn init_headless(builder: Box<RenderLoopBuilder>) {
         plugin_registry,
     });
     // NOTE I do not like this circular dependency on context
-    let render_context = RenderContext {
-        time_info: &TimeInfo::default(),
-        draw_context,
-        _private: (),
-    };
     draw_context
         .render_scene(|pass| {
             scene_handler.on_render(
                 plugin_registry,
-                &render_context,
+                draw_context,
+                &TimeInfo::default(),
                 &mut pass.forget_lifetime(),
             );
         })

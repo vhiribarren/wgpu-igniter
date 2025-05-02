@@ -23,8 +23,8 @@ SOFTWARE.
 */
 
 use wgpu_igniter::{
-    DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderContext, RenderLoopHandler,
-    Uniform,
+    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderLoopHandler,
+    TimeInfo, Uniform, plugins::PluginRegistry,
 };
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./canvas_raw.wgsl");
@@ -58,16 +58,13 @@ impl MainScenario {
 impl RenderLoopHandler for MainScenario {
     fn on_render(
         &mut self,
-        _plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
-        render_context: &RenderContext,
+        _plugin_registry: &mut PluginRegistry,
+        _draw_context: &DrawContext,
+        time_info: &TimeInfo,
         render_pass: &mut wgpu::RenderPass<'static>,
     ) {
-        let &RenderContext {
-            time_info: update_interval,
-            ..
-        } = render_context;
         self.time_uniform
-            .write_uniform(update_interval.init_start.elapsed().as_secs_f32());
+            .write_uniform(time_info.init_start.elapsed().as_secs_f32());
         self.canvas.render(render_pass);
     }
 }

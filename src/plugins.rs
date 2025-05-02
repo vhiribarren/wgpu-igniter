@@ -27,7 +27,7 @@ use std::any::{Any, TypeId};
 use indexmap::IndexMap;
 use winit::event::{DeviceEvent, KeyEvent, WindowEvent};
 
-use crate::{EventState, RenderContext};
+use crate::{DrawContext, EventState, TimeInfo};
 
 #[cfg(feature = "egui")]
 pub mod egui;
@@ -43,7 +43,8 @@ pub trait Plugin: Any {
     }
     fn on_render(
         &mut self,
-        render_context: &RenderContext,
+        draw_context: &DrawContext,
+        time_info: &TimeInfo,
         render_pass: &mut wgpu::RenderPass<'static>,
     );
 }

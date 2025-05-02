@@ -24,9 +24,10 @@ SOFTWARE.
 
 use std::rc::Rc;
 use wgpu_igniter::cameras::{Camera, InteractiveCamera};
+use wgpu_igniter::plugins::PluginRegistry;
 use wgpu_igniter::plugins::scene_3d::{Scene3D, Scene3DPlugin};
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_igniter::{LaunchContext, RenderContext, RenderLoopHandler};
+use wgpu_igniter::{DrawContext, LaunchContext, RenderLoopHandler, TimeInfo};
 
 const DEFAULT_SHADER: &str = include_str!("cube_normals.wgsl");
 
@@ -62,14 +63,13 @@ impl MainScenario {
 }
 
 impl RenderLoopHandler for MainScenario {
-    fn on_render(
+    fn on_update(
         &mut self,
-        _plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
-        render_context: &RenderContext,
-        _render_pass: &mut wgpu::RenderPass<'static>,
+        _plugin_registry: &mut PluginRegistry,
+        _draw_context: &mut DrawContext,
+        time_info: &TimeInfo,
     ) {
-        let update_interval = render_context.time_info;
-        let delta_rotation = ROTATION_DEG_PER_S * update_interval.processing_delta.as_secs_f32();
+        let delta_rotation = ROTATION_DEG_PER_S * time_info.processing_delta.as_secs_f32();
         let transform = cgmath::Matrix4::from_angle_z(cgmath::Deg(delta_rotation))
             * cgmath::Matrix4::from_angle_y(cgmath::Deg(delta_rotation));
         self.cube.borrow_mut().apply_transform(transform);

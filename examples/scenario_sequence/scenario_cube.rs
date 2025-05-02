@@ -28,7 +28,7 @@ use wgpu_igniter::cameras::{Camera, InteractiveCamera};
 use wgpu_igniter::plugins::PluginRegistry;
 use wgpu_igniter::plugins::scene_3d::{Scene3D, Scene3DPlugin};
 use wgpu_igniter::primitives::{Object3D, Shareable, Transforms, cube};
-use wgpu_igniter::{DrawContext, LaunchContext, RenderContext, RenderLoopHandler};
+use wgpu_igniter::{DrawContext, LaunchContext, RenderLoopHandler, TimeInfo};
 
 const DEFAULT_SHADER: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -69,13 +69,13 @@ impl RenderLoopHandler for MainScenario {
     fn on_init(&mut self, _plugin_registry: &mut PluginRegistry, draw_context: &mut DrawContext) {
         draw_context.set_clear_color(Some(wgpu::Color::GREEN));
     }
-    fn on_render(
+    fn on_update(
         &mut self,
-        _plugin_registry: &mut wgpu_igniter::plugins::PluginRegistry,
-        render_context: &RenderContext,
-        _render_pass: &mut wgpu::RenderPass<'static>,
+        _plugin_registry: &mut PluginRegistry,
+        _draw_context: &mut DrawContext,
+        time_info: &TimeInfo,
     ) {
-        let total_seconds = render_context.time_info.init_start.elapsed().as_secs_f32();
+        let total_seconds = time_info.init_start.elapsed().as_secs_f32();
         let new_rotation = ROTATION_DEG_PER_S * total_seconds;
         // Translation on z to be in the clipped space (between -w and w) and camera in front of the cube
         let z_translation: cgmath::Matrix4<f32> =
