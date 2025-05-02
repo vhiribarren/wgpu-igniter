@@ -23,13 +23,11 @@ SOFTWARE.
 */
 
 use wgpu_igniter::plugins::PluginRegistry;
+use wgpu_igniter::plugins::canvas::CanvasPlugin;
 use wgpu_igniter::plugins::egui::EquiPlugin;
-use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderLoopHandler,
-    TimeInfo, Uniform,
-};
+use wgpu_igniter::{DrawContext, LaunchContext, RenderLoopHandler, TimeInfo};
 
-const CANVAS_STATIC_SHADER: &str = include_str!("./egui_integration.wgsl");
+const FRAGMENT_SHADER: &str = include_str!("./fragment_shader.wgsl");
 
 struct GuiState {
     pub anim_speed: f32,
@@ -37,8 +35,6 @@ struct GuiState {
 }
 
 pub struct MainScenario {
-    canvas: Drawable,
-    time_uniform: Uniform<f32>,
     gui_state: GuiState,
 }
 
@@ -53,24 +49,14 @@ impl MainScenario {
             pixels_per_point: 1.0,
             anim_speed: 1.0,
         };
-        plugin_registry.register(EquiPlugin::new(draw_context));
-        let time_uniform = Uniform::new(draw_context, 0f32);
-        let shader_module = draw_context.create_shader_module(CANVAS_STATIC_SHADER);
-        let mut drawable_builder = DrawableBuilder::new(
-            draw_context,
-            &shader_module,
-            &shader_module,
-            DrawModeParams::Direct { vertex_count: 3 },
+        let canvas = CanvasPlugin::new(
+            &draw_context,
+            &draw_context.create_shader_module(FRAGMENT_SHADER),
         );
-        drawable_builder
-            .add_uniform(0, 0, &time_uniform)
-            .expect("Bind group or binding should be different from other uniforms");
-        let canvas = drawable_builder.build();
-        Self {
-            canvas,
-            time_uniform,
-            gui_state,
-        }
+        plugin_registry.register(canvas);
+        plugin_registry.register(EquiPlugin::new(draw_context));
+
+        Self { gui_state }
     }
     fn generate_egui(state: &mut GuiState, egui_context: &egui::Context) {
         egui::TopBottomPanel::top("top_bar").show(egui_context, |ui| {
@@ -86,21 +72,17 @@ impl MainScenario {
 }
 
 impl RenderLoopHandler for MainScenario {
-    fn on_render(
+    fn on_update(
         &mut self,
         plugin_registry: &mut PluginRegistry,
-        _draw_context: &DrawContext,
-        time_info: &TimeInfo,
-        render_pass: &mut wgpu::RenderPass<'static>,
+        _draw_context: &mut DrawContext,
+        _time_info: &TimeInfo,
     ) {
+        //FIXME Take into account speed info, by adding a uniform to the canvas
         let egui_support = plugin_registry
             .get_mut::<EquiPlugin>()
             .expect("EguiSupport should be registered");
-        egui_support.draw(|egui_context| Self::generate_egui(&mut self.gui_state, egui_context));
         egui_support.set_pixels_per_point(self.gui_state.pixels_per_point);
-        self.time_uniform.write_uniform(
-            time_info.init_start.elapsed().as_secs_f32() * self.gui_state.anim_speed,
-        );
-        self.canvas.render(render_pass);
+        egui_support.draw(|egui_context| Self::generate_egui(&mut self.gui_state, egui_context));
     }
 }
