@@ -2,7 +2,7 @@ use anyhow::Result;
 use wgpu::ShaderModule;
 
 use crate::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, TimeInfo, Uniform, UniformSlot,
+    BindingSlot, DrawContext, DrawModeParams, Drawable, DrawableBuilder, TimeInfo, Uniform,
 };
 
 use super::Plugin;
@@ -14,12 +14,11 @@ pub struct CanvasPlugin {
     time_uniform: Uniform<f32>,
 }
 
-// TODO Make it possible to buffers, not only uniforms ; maybe with the idea of TemplateDrawable?
 impl CanvasPlugin {
     pub fn new(
         draw_context: &DrawContext,
         fragment_shader: &ShaderModule,
-        uniforms: &[UniformSlot],
+        uniforms: &[BindingSlot],
     ) -> Result<Self> {
         let time_uniform = Uniform::new(draw_context, 0f32);
         let shader_module = &draw_context.create_shader_module(CANVAS_STATIC_SHADER);
@@ -30,17 +29,17 @@ impl CanvasPlugin {
             DrawModeParams::Direct { vertex_count: 3 },
         );
         drawable_builder
-            .add_uniform(UniformSlot {
+            .add_binding_slot(BindingSlot {
                 binding: 0,
                 bind_group: 0,
-                uniform: &time_uniform,
+                resource: &time_uniform,
             })
             .expect("Bind group 0 and binding 0 should not have been already taken.");
         for uniform in uniforms {
-            drawable_builder.add_uniform(UniformSlot {
+            drawable_builder.add_binding_slot(BindingSlot {
                 binding: uniform.binding,
                 bind_group: uniform.bind_group,
-                uniform: uniform.uniform,
+                resource: uniform.resource,
             })?;
         }
         let canvas = drawable_builder.build();

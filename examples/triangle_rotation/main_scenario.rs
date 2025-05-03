@@ -28,8 +28,8 @@ use wgpu_igniter::primitives::triangle::{
     TRIANGLE_COLOR, TRIANGLE_GEOMETRY, TRIANGLE_VERTEX_COUNT,
 };
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderLoopHandler,
-    TimeInfo, Uniform, UniformSlot,
+    BindingSlot, DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext,
+    RenderLoopHandler, TimeInfo, Uniform,
 };
 
 const DEFAULT_SHADER: &str = include_str!("./triangle_rotation.wgsl");
@@ -68,10 +68,10 @@ impl MainScenario {
                 wgpu::VertexFormat::Float32x3,
             )
             .expect("Location should be different than for another attribute.")
-            .add_uniform(UniformSlot {
+            .add_binding_slot(BindingSlot {
                 bind_group: 0,
                 binding: 0,
-                uniform: &transform_uniform,
+                resource: &transform_uniform,
             })
             .expect("Bind group or binding should be different from other uniforms.");
         let triangle = drawable_builder.build();

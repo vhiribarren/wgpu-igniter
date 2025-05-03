@@ -24,7 +24,7 @@ SOFTWARE.
 
 use cgmath::SquareMatrix;
 
-use crate::UniformSlot;
+use crate::BindingSlot;
 use crate::draw_context::{DrawContext, DrawableBuilder, Uniform};
 use crate::primitives::Object3D;
 
@@ -80,10 +80,10 @@ pub fn create_equilateral_triangle(
             wgpu::VertexFormat::Float32x3,
         )
         .expect("Location should not already be used.")
-        .add_uniform(UniformSlot {
+        .add_binding_slot(BindingSlot {
             bind_group: 0,
             binding: 0,
-            uniform: &transform_uniform,
+            resource: &transform_uniform,
         })
         .expect("Binding elements should not already be used.");
     let drawable = drawable_builder.build();

@@ -154,14 +154,15 @@ impl<T: UnitformType> Uniform<T> {
     }
 }
 
-pub struct UniformSlot<'a> {
+pub struct BindingSlot<'a> {
     pub bind_group: u32,
     pub binding: u32,
-    pub uniform: &'a dyn AsBindingResource,
+    pub resource: &'a dyn AsBindingResource,
 }
 
 pub trait AsBindingResource {
     fn binding_resource(&self) -> wgpu::BindingResource;
+    fn binding_type(&self) -> wgpu::BindingType;
 }
 
 impl<T> AsBindingResource for Uniform<T>
@@ -170,6 +171,13 @@ where
 {
     fn binding_resource(&self) -> wgpu::BindingResource {
         self.buffer.as_entire_binding()
+    }
+    fn binding_type(&self) -> wgpu::BindingType {
+        wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Uniform,
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        }
     }
 }
 
@@ -215,14 +223,29 @@ impl<T: StorageBufferType> StorageBuffer<T> {
             local_buffer,
         }
     }
-    #[must_use]
-    pub fn binding_resource(&self) -> wgpu::BindingResource {
-        self.remote_buffer.as_entire_binding()
-    }
+
     pub fn start_write(&mut self) -> StorageBufferWriteGuard<'_, T> {
         StorageBufferWriteGuard {
             queue: Rc::clone(&self.queue),
             storage_buffer: self,
+        }
+    }
+}
+
+impl<T> AsBindingResource for StorageBuffer<T>
+where
+    T: StorageBufferType,
+{
+    #[must_use]
+    fn binding_resource(&self) -> wgpu::BindingResource {
+        self.remote_buffer.as_entire_binding()
+    }
+    #[must_use]
+    fn binding_type(&self) -> wgpu::BindingType {
+        wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Storage { read_only: true },
+            has_dynamic_offset: false,
+            min_binding_size: None,
         }
     }
 }
@@ -348,64 +371,29 @@ impl<'a> DrawableBuilder<'a> {
         self.blend_option = Some(blend_option);
         self
     }
-    pub fn add_uniform(
+    pub fn add_binding_slot(
         &mut self,
-        uniform_slot: UniformSlot<'a>,
+        binding_slot: BindingSlot<'a>,
     ) -> Result<&mut Self, anyhow::Error> {
         let bind_group_layout_entry = wgpu::BindGroupLayoutEntry {
-            binding: uniform_slot.binding,
+            binding: binding_slot.binding,
             visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Uniform,
-                has_dynamic_offset: false,
-                min_binding_size: None,
-            },
+            ty: binding_slot.resource.binding_type(),
             count: None,
         };
-        let bind_group = uniform_slot.bind_group as usize;
+        let bind_group = binding_slot.bind_group as usize;
         if bind_group >= self.binding_groups.len() {
             self.binding_groups.resize(bind_group + 1, None);
         }
-        let to_store = (uniform_slot.uniform.binding_resource(), bind_group_layout_entry);
+        let to_store = (
+            binding_slot.resource.binding_resource(),
+            bind_group_layout_entry,
+        );
         if let Some(entry) = self.binding_groups.get_mut(bind_group).unwrap() {
-            entry.insert(uniform_slot.binding, to_store);
+            entry.insert(binding_slot.binding, to_store);
         } else {
             let mut bindings = BTreeMap::new();
-            bindings.insert(uniform_slot.binding, to_store);
-            self.binding_groups[bind_group] = Some(bindings);
-        }
-        // TODO Ensure group and binding are not already used
-        Ok(self)
-    }
-    pub fn add_storage_buffer<T>(
-        &mut self,
-        bind_group: u32,
-        binding: u32,
-        storage_buffer: &'a StorageBuffer<T>,
-    ) -> Result<&mut Self, anyhow::Error>
-    where
-        T: StorageBufferType,
-    {
-        let bind_group_layout_entry = wgpu::BindGroupLayoutEntry {
-            binding,
-            visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Storage { read_only: true },
-                has_dynamic_offset: false,
-                min_binding_size: None,
-            },
-            count: None,
-        };
-        let bind_group = bind_group as usize;
-        if bind_group >= self.binding_groups.len() {
-            self.binding_groups.resize(bind_group + 1, None);
-        }
-        let to_store = (storage_buffer.binding_resource(), bind_group_layout_entry);
-        if let Some(entry) = self.binding_groups.get_mut(bind_group).unwrap() {
-            entry.insert(binding, to_store);
-        } else {
-            let mut bindings = BTreeMap::new();
-            bindings.insert(binding, to_store);
+            bindings.insert(binding_slot.binding, to_store);
             self.binding_groups[bind_group] = Some(bindings);
         }
         // TODO Ensure group and binding are not already used

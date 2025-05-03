@@ -25,7 +25,7 @@ SOFTWARE.
 use wgpu_igniter::plugins::PluginRegistry;
 use wgpu_igniter::plugins::canvas::CanvasPlugin;
 use wgpu_igniter::plugins::egui::EquiPlugin;
-use wgpu_igniter::{DrawContext, LaunchContext, RenderLoopHandler, TimeInfo, Uniform, UniformSlot};
+use wgpu_igniter::{BindingSlot, DrawContext, LaunchContext, RenderLoopHandler, TimeInfo, Uniform};
 
 const FRAGMENT_SHADER: &str = include_str!("./fragment_shader.wgsl");
 
@@ -55,10 +55,10 @@ impl MainScenario {
         let canvas = CanvasPlugin::new(
             &draw_context,
             &draw_context.create_shader_module(FRAGMENT_SHADER),
-            &[UniformSlot {
+            &[BindingSlot {
                 bind_group: 1,
                 binding: 0,
-                uniform: &speed_uniform,
+                resource: &speed_uniform,
             }],
         )
         .expect("Bind group or binding alreay taken");
