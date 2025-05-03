@@ -43,6 +43,18 @@ pub struct Dimensions {
     pub height: u32,
 }
 
+impl Dimensions {
+    #[must_use]
+    #[allow(clippy::cast_precision_loss)]
+    pub fn surface_ratio(&self) -> f32 {
+        if self.height > 0 {
+            self.width as f32 / self.height as f32
+        } else {
+            1.0
+        }
+    }
+}
+
 enum DrawMode {
     Direct {
         vertex_count: u32,

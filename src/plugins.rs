@@ -34,20 +34,23 @@ pub mod canvas;
 pub mod egui;
 pub mod scene_3d;
 
+#[allow(unused_variables)]
 pub trait Plugin: Any {
-    fn on_mouse_event(&mut self, _event: &DeviceEvent) -> EventState {
+    fn on_mouse_event(&mut self, event: &DeviceEvent) -> EventState {
         EventState::default()
     }
-    fn on_keyboard_event(&mut self, _event: &KeyEvent) {}
-    fn on_window_event(&mut self, _event: &WindowEvent) -> EventState {
+    fn on_keyboard_event(&mut self, event: &KeyEvent) {}
+    fn on_window_event(&mut self, event: &WindowEvent) -> EventState {
         EventState::default()
     }
+    fn on_update(&mut self, draw_context: &DrawContext, time_info: &TimeInfo) {}
     fn on_render(
         &mut self,
         draw_context: &DrawContext,
         time_info: &TimeInfo,
         render_pass: &mut wgpu::RenderPass<'static>,
-    );
+    ) {
+    }
 }
 
 impl dyn Plugin {

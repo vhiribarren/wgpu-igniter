@@ -273,6 +273,9 @@ impl ApplicationHandler<App> for AppHandlerState {
                 };
                 app.scenario
                     .on_update(plugin_registry, &mut app.draw_context, time_info);
+                for listener in plugin_registry.iter_mut() {
+                    listener.on_update(&app.draw_context, time_info);
+                }
                 app.draw_context
                     .render_scene(|render_pass| {
                         let rpass = &mut render_pass.forget_lifetime();
