@@ -373,7 +373,7 @@ impl<'a> DrawableBuilder<'a> {
     }
     pub fn add_binding_slot(
         &mut self,
-        binding_slot: BindingSlot<'a>,
+        binding_slot: &BindingSlot<'a>,
     ) -> Result<&mut Self, anyhow::Error> {
         let bind_group_layout_entry = wgpu::BindGroupLayoutEntry {
             binding: binding_slot.binding,

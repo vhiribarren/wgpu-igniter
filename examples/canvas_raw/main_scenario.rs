@@ -45,7 +45,7 @@ impl MainScenario {
             DrawModeParams::Direct { vertex_count: 3 },
         );
         drawable_builder
-            .add_binding_slot(BindingSlot {
+            .add_binding_slot(&BindingSlot {
                 bind_group: 0,
                 binding: 0,
                 resource: &time_uniform,

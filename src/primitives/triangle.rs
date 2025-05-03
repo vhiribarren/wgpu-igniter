@@ -80,7 +80,7 @@ pub fn create_equilateral_triangle(
             wgpu::VertexFormat::Float32x3,
         )
         .expect("Location should not already be used.")
-        .add_binding_slot(BindingSlot {
+        .add_binding_slot(&BindingSlot {
             bind_group: 0,
             binding: 0,
             resource: &transform_uniform,

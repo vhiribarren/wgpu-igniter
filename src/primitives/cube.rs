@@ -199,13 +199,13 @@ pub fn create_cube_with_colors(
             wgpu::VertexFormat::Float32x3,
         )
         .expect("Location should be different than for another attribute.")
-        .add_binding_slot(BindingSlot {
+        .add_binding_slot(&BindingSlot {
             bind_group: 0,
             binding: 0,
             resource: &uniforms.camera_mat,
         })
         .expect("Bind group or binding should be different from other uniforms.")
-        .add_binding_slot(BindingSlot {
+        .add_binding_slot(&BindingSlot {
             bind_group: 1,
             binding: 0,
             resource: &transform_uniform,
@@ -265,25 +265,25 @@ pub fn create_cube_with_normals(
             wgpu::VertexFormat::Float32x3,
         )
         .expect("Location should be different than for another attribute.")
-        .add_binding_slot(BindingSlot {
+        .add_binding_slot(&BindingSlot {
             bind_group: 0,
             binding: 0,
             resource: &uniforms.camera_mat,
         })
         .expect("Bind group or binding should be different from other uniforms.")
-        .add_binding_slot(BindingSlot {
+        .add_binding_slot(&BindingSlot {
             bind_group: 0,
             binding: 1,
             resource: &uniforms.camera_pos,
         })
         .expect("Bind group or binding should be different from other uniforms.")
-        .add_binding_slot(BindingSlot {
+        .add_binding_slot(&BindingSlot {
             bind_group: 1,
             binding: 0,
             resource: &transform_uniform,
         })
         .expect("Bind group or binding should be different from other uniforms.")
-        .add_binding_slot(BindingSlot {
+        .add_binding_slot(&BindingSlot {
             bind_group: 1,
             binding: 1,
             resource: &normals_uniform,
@@ -344,25 +344,25 @@ pub fn create_cube_with_normals_instances(
             wgpu::VertexFormat::Float32x3,
         )
         .expect("Location should be different than for another attribute.")
-        .add_binding_slot(BindingSlot {
+        .add_binding_slot(&BindingSlot {
             bind_group: 0,
             binding: 0,
             resource: &uniforms.camera_mat,
         })
         .expect("Bind group or binding should be different from other uniforms.")
-        .add_binding_slot(BindingSlot {
+        .add_binding_slot(&BindingSlot {
             bind_group: 0,
             binding: 1,
             resource: &uniforms.camera_pos,
         })
         .expect("Bind group or binding should be different from other uniforms.")
-        .add_binding_slot(BindingSlot {
+        .add_binding_slot(&BindingSlot {
             bind_group: 1,
             binding: 0,
             resource: &handlers.transforms,
         })
         .expect("Bind group or binding should be different from other uniforms.")
-        .add_binding_slot(BindingSlot {
+        .add_binding_slot(&BindingSlot {
             bind_group: 1,
             binding: 1,
             resource: &handlers.normal_mats,

@@ -29,14 +29,14 @@ impl CanvasPlugin {
             DrawModeParams::Direct { vertex_count: 3 },
         );
         drawable_builder
-            .add_binding_slot(BindingSlot {
+            .add_binding_slot(&BindingSlot {
                 binding: 0,
                 bind_group: 0,
                 resource: &time_uniform,
             })
             .expect("Bind group 0 and binding 0 should not have been already taken.");
         for uniform in uniforms {
-            drawable_builder.add_binding_slot(BindingSlot {
+            drawable_builder.add_binding_slot(&BindingSlot {
                 binding: uniform.binding,
                 bind_group: uniform.bind_group,
                 resource: uniform.resource,
