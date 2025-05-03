@@ -23,8 +23,7 @@ SOFTWARE.
 */
 
 use wgpu_igniter::{
-    DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderLoopHandler,
-    TimeInfo, Uniform, plugins::PluginRegistry,
+    plugins::PluginRegistry, DrawContext, DrawModeParams, Drawable, DrawableBuilder, LaunchContext, RenderLoopHandler, TimeInfo, Uniform, UniformSlot
 };
 
 const CANVAS_STATIC_SHADER: &str = include_str!("./canvas_raw.wgsl");
@@ -45,7 +44,11 @@ impl MainScenario {
             DrawModeParams::Direct { vertex_count: 3 },
         );
         drawable_builder
-            .add_uniform(0, 0, &time_uniform)
+            .add_uniform(UniformSlot {
+                bind_group: 0,
+                binding: 0,
+                uniform: &time_uniform,
+            }) 
             .expect("Bind group or binding should be different from other uniforms");
         let canvas = drawable_builder.build();
         Self {

@@ -30,10 +30,18 @@ impl CanvasPlugin {
             DrawModeParams::Direct { vertex_count: 3 },
         );
         drawable_builder
-            .add_uniform(0, 0, &time_uniform)
+            .add_uniform(UniformSlot {
+                binding: 0,
+                bind_group: 0,
+                uniform: &time_uniform,
+            })
             .expect("Bind group 0 and binding 0 should not have been already taken.");
         for uniform in uniforms {
-            drawable_builder.add_uniform(uniform.bind_group, uniform.binding, uniform.uniform)?;
+            drawable_builder.add_uniform(UniformSlot {
+                binding: uniform.binding,
+                bind_group: uniform.bind_group,
+                uniform: uniform.uniform,
+            })?;
         }
         let canvas = drawable_builder.build();
         Ok(Self {

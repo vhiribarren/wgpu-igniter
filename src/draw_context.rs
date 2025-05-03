@@ -350,12 +350,10 @@ impl<'a> DrawableBuilder<'a> {
     }
     pub fn add_uniform(
         &mut self,
-        bind_group: u32,
-        binding: u32,
-        uniform: &'a dyn AsBindingResource,
+        uniform_slot: UniformSlot<'a>,
     ) -> Result<&mut Self, anyhow::Error> {
         let bind_group_layout_entry = wgpu::BindGroupLayoutEntry {
-            binding,
+            binding: uniform_slot.binding,
             visibility: wgpu::ShaderStages::VERTEX_FRAGMENT,
             ty: wgpu::BindingType::Buffer {
                 ty: wgpu::BufferBindingType::Uniform,
@@ -364,16 +362,16 @@ impl<'a> DrawableBuilder<'a> {
             },
             count: None,
         };
-        let bind_group = bind_group as usize;
+        let bind_group = uniform_slot.bind_group as usize;
         if bind_group >= self.binding_groups.len() {
             self.binding_groups.resize(bind_group + 1, None);
         }
-        let to_store = (uniform.binding_resource(), bind_group_layout_entry);
+        let to_store = (uniform_slot.uniform.binding_resource(), bind_group_layout_entry);
         if let Some(entry) = self.binding_groups.get_mut(bind_group).unwrap() {
-            entry.insert(binding, to_store);
+            entry.insert(uniform_slot.binding, to_store);
         } else {
             let mut bindings = BTreeMap::new();
-            bindings.insert(binding, to_store);
+            bindings.insert(uniform_slot.binding, to_store);
             self.binding_groups[bind_group] = Some(bindings);
         }
         // TODO Ensure group and binding are not already used
